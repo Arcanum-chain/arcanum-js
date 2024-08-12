@@ -1,0 +1,1 @@
+{"version":3,"file":"blockData.interface.d.ts","sourceRoot":"./src/index.ts/","sources":["blockData/blockData.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,sCAAsC,CAAC;AAExE,MAAM,WAAW,UAAU;IACzB,YAAY,EAAE,MAAM,CAAC,MAAM,EAAE,WAAW,CAAC,CAAC;IAC1C,QAAQ,CAAC,SAAS,EAAE,MAAM,CAAC;CAC5B"}

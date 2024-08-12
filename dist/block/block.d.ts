@@ -1,0 +1,12 @@
+import type { IBlockData } from "../blockData/blockData.interface";
+import type { BlockConstructor } from "./block.interface";
+export declare class Block {
+    readonly index: number;
+    readonly timestamp: number;
+    prevBlockHash: string;
+    hash: string;
+    data: IBlockData;
+    constructor({ index, timestamp, data, prevBlockHash, }: BlockConstructor);
+    calculateHash(): string;
+}
+//# sourceMappingURL=block.d.ts.map

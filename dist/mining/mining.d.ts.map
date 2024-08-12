@@ -1,0 +1,1 @@
+{"version":3,"file":"mining.d.ts","sourceRoot":"./src/index.ts/","sources":["mining/mining.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAIvC,qBAAa,WAAW;IAKV,OAAO,CAAC,KAAK;IAJzB,OAAO,CAAC,kBAAkB,CAAqB;IACxC,UAAU,EAAE,MAAM,CAA8B;IAChD,SAAS,EAAE,MAAM,CAAmC;gBAEvC,KAAK,EAAE,KAAK,EAAE;IAQ3B,SAAS,CAAC,KAAK,EAAE,KAAK;IA4BtB,mBAAmB;CAqB3B"}
