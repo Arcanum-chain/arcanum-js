@@ -60,8 +60,8 @@ export class BlockTransaction {
     const key = `${this.sender}`;
 
     const transactionHash = crypto
-      .createHmac("sha256", key)
-      .update(data)
+      .createHash("sha256")
+      .update(crypto.createHmac("sha256", key).update(data).digest())
       .digest();
 
     return `${DEFAULT_HASH_PREFIX}${transactionHash.toString("hex")}`;

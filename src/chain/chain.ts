@@ -1,5 +1,7 @@
 import WebSocket from "ws";
 
+import { BlockChainStore } from "../store";
+
 import { Block } from "../block/block";
 import { CalculateBlockToData } from "../calculateBlockToData/calcuateBlockToData";
 import { MiningBlock } from "../mining/mining";
@@ -16,16 +18,15 @@ import type { User } from "../user/user.interface";
 
 export class BlockChain {
   public chain: Block[] = [];
-  public mappingChain: Record<string, Block> = {};
   readonly pendingTransactions: Transaction[] = [];
   private readonly peers: string[];
   private users: Record<User["publicKey"], User> = {};
   private blockChainUser: BlockChainUser;
   private verifyBlockService: VerifyBlockService;
   private calculateRandomBlockToData: CalculateBlockToData;
+  private readonly store: typeof BlockChainStore = BlockChainStore;
 
   constructor() {
-    this.mappingChain = {};
     this.chain = IS_MAIN_NODE ? [this.createGenesisBlock()] : [];
     this.peers = PEERS;
     this.broadcastBlock = this.broadcastBlock.bind(this);
@@ -54,9 +55,8 @@ export class BlockChain {
     };
 
     const block = new Block(payload);
-    const blockHash = block.hash;
 
-    this.mappingChain[blockHash] = block;
+    this.store.setNewBlockToChain(block);
 
     this.broadcastBlock(block);
 
@@ -68,26 +68,7 @@ export class BlockChain {
   }
 
   public getBlockByHash(blockHash: string) {
-    return this.mappingChain[blockHash];
-  }
-
-  public addBlock() {
-    const payload: BlockConstructor = {
-      index: this.getLatestBlock().index + 1,
-      timestamp: Date.now(),
-      data: {
-        transactions: {},
-      },
-      prevBlockHash: this.getLatestBlock().hash,
-    };
-
-    const block = new Block(payload);
-
-    this.chain.push(block);
-    this.mappingChain[block.hash] = block;
-    this.broadcastBlock(block);
-
-    return block;
+    return this.chain[0];
   }
 
   public isValidChain(chain: Block[]) {
@@ -117,7 +98,7 @@ export class BlockChain {
     new MiningBlock(this.chain).mineBlock(newBlock);
 
     this.chain.push(newBlock);
-    this.mappingChain[newBlock.hash] = newBlock;
+    this.store.setNewBlockToChain(newBlock);
 
     const isValidChain = this.isValidChain(this.chain);
 
@@ -210,7 +191,7 @@ export class BlockChain {
         throw new Error("Invalid hash");
       }
 
-      this.users[newUsers.publicKey] = newUsers;
+      this.store.setNewUser(newUsers);
 
       return true;
     } catch (e) {
@@ -222,7 +203,7 @@ export class BlockChain {
     try {
       const data = this.blockChainUser.createNewUser();
 
-      this.users[data.user.publicKey] = data.user;
+      this.addNewUserToChain(data.user);
 
       this.broadcastUser(data.user);
 

@@ -1,7 +1,9 @@
 import express from "express";
 import WebSocket from "ws";
 
+import { EventMessage } from "./constants";
 import { PORT, WS_PORT } from "./constants/peers.constanrs";
+import { BlockChainStore } from "./store";
 
 import { BlockChain } from "./chain/chain";
 // import { N2NProtocol } from "./n2nProtocol/n2n.protocol";
@@ -12,7 +14,10 @@ const dump = new DumpingService();
 // const protocol = new N2NProtocol(4030, "ws://localhost:4030", "0xewfkfmfew");
 
 // protocol.createServer();
-dump.dumpingBlockchain(blockChain.chain);
+// dump.dumpingBlockchain(blockChain.chain);
+BlockChainStore.on(EventMessage.BLOCK_ADDED, (block) => {
+  console.log("New mining block:", block);
+});
 
 const app = express();
 app.use(express.json());

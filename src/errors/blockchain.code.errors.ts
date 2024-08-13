@@ -11,6 +11,12 @@ export enum BlockChainErrorCodes {
   FAIL_NODES_DUMP = 301,
   FAIL_CREATE_DIR = 302,
   FAIL_NODE_ID_DUMP = 303,
+  DOESNT_NOT_BLOCK_BY_HASH = 400,
+  FAIL_SYNCHRONIZE_CHAIN = 401,
+  FAIL_SAVE_NEW_USER_TO_STORE = 402,
+  NOT_FOUND_ENTITY = 403,
+  FAIL_SAVE_TRANSACTION_TO_MEM_PULL = 404,
+  ERROR_IN_METADATA_STORE = 405,
 }
 
 export const BlockChainTextError: Record<BlockChainErrorCodes, string> = {
@@ -33,4 +39,14 @@ export const BlockChainTextError: Record<BlockChainErrorCodes, string> = {
   [BlockChainErrorCodes.FAIL_CREATE_DIR]:
     "Fail create data directory(/.ravkchain)!!!",
   [BlockChainErrorCodes.FAIL_NODE_ID_DUMP]: "Fail node id save to file!!!",
+  [BlockChainErrorCodes.DOESNT_NOT_BLOCK_BY_HASH]:
+    "Not block in chain by this hash!",
+  [BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN]:
+    "Fail synchronize new chain!!!",
+  [BlockChainErrorCodes.FAIL_SAVE_NEW_USER_TO_STORE]:
+    "Fail save new user to store!!!",
+  [BlockChainErrorCodes.NOT_FOUND_ENTITY]: "Not found entity :(",
+  [BlockChainErrorCodes.FAIL_SAVE_TRANSACTION_TO_MEM_PULL]:
+    "Fail save transaction to mempull!!!",
+  [BlockChainErrorCodes.ERROR_IN_METADATA_STORE]: "Error in metadata store!!!",
 };

@@ -9,10 +9,6 @@ export class MiningBlock {
 
   constructor(private chain: Block[]) {
     this.verifyBlockService = new VerifyBlockService();
-
-    if (this) {
-      return this;
-    }
   }
 
   public mineBlock(block: Block) {
@@ -32,6 +28,7 @@ export class MiningBlock {
           })
         ) {
           block.hash = `${DEFAULT_HASH_PREFIX}${proofingHash}`;
+          block.data.blockHash = `${DEFAULT_HASH_PREFIX}${proofingHash}`;
 
           return block;
         }
@@ -45,7 +42,6 @@ export class MiningBlock {
 
   public calculateDifficulty() {
     try {
-      console.log(this.chain);
       const lastBlockTimestamp = this.chain[this.chain.length - 1].timestamp;
       const currentTimestamp = Date.now();
       const timeTaken = currentTimestamp - lastBlockTimestamp;
