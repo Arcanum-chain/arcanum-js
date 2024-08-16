@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VerifyBlockService = void 0;
 const node_crypto_1 = __importDefault(require("node:crypto"));
-const blockchain_error_1 = require("../errors/blockchain.error");
+const errors_1 = require("../errors");
 const default_hash_prefix_1 = require("../constants/default.hash.prefix");
 class VerifyBlockService {
     isHashProofed({ hash, difficulty = 5, prefix = "0", }) {
@@ -22,7 +22,7 @@ class VerifyBlockService {
             if (hash.startsWith(default_hash_prefix_1.DEFAULT_HASH_PREFIX)) {
                 return true;
             }
-            throw new blockchain_error_1.BlockChainError("Invalid chain hash");
+            throw new errors_1.BlockChainError(errors_1.BlockChainErrorCodes.INVALID_HASH_BLOCK);
         }
         catch (e) {
             throw e;
@@ -30,7 +30,10 @@ class VerifyBlockService {
     }
     genHash(data) {
         try {
-            return node_crypto_1.default.createHash("sha256").update(data).digest("hex");
+            return node_crypto_1.default
+                .createHash("sha256")
+                .update(node_crypto_1.default.createHash("sha256").update(data).digest("hex"))
+                .digest("hex");
         }
         catch (e) {
             throw e;

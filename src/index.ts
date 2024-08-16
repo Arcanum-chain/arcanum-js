@@ -1,52 +1,61 @@
 import express from "express";
-import WebSocket from "ws";
 
-import { EventMessage } from "./constants";
-import { PORT, WS_PORT } from "./constants/peers.constanrs";
-import { BlockChainStore } from "./store";
+import { PORT } from "./constants/peers.constanrs";
 
 import { BlockChain } from "./chain/chain";
-// import { N2NProtocol } from "./n2nProtocol/n2n.protocol";
+import { ChocolateJo } from "./chocolateJo/chocolateJo";
 import { DumpingService } from "./dumping/dumping";
+import { N2NProtocol } from "./n2nProtocol/n2n.protocol";
 
 const blockChain = new BlockChain();
 const dump = new DumpingService();
-// const protocol = new N2NProtocol(4030, "ws://localhost:4030", "0xewfkfmfew");
+const protocol = new N2NProtocol(
+  Number(process.env.WS_PORT),
+  process.env.WS_NODE_URL as string,
+  "0xewfkfmfew",
+  { isMainNode: JSON.parse(process.env.IS_MAIN_NODE as string) }
+);
+const chocolateJo = new ChocolateJo(protocol);
 
-// protocol.createServer();
-// dump.dumpingBlockchain(blockChain.chain);
-BlockChainStore.on(EventMessage.BLOCK_ADDED, (block) => {
-  console.log("New mining block:", block);
-});
+if (JSON.parse(process.env.IS_MAIN_NODE as string)) {
+  blockChain.createGenesisBlock();
+}
+
+protocol.createServer();
 
 const app = express();
 app.use(express.json());
 
 app.get("/chain", (req, res) => {
-  res.json(blockChain.chain);
+  try {
+    res.json(blockChain.getChain());
+  } catch (e) {
+    res.json(e);
+  }
 });
 
 app.post("/mine", (req, res) => {
-  blockChain.mineBlock();
-  res.send("Блок добыт");
+  try {
+    blockChain.mineBlock();
+    res.send("Блок добыт");
+  } catch (e) {
+    console.log(e);
+    res.status(400).send(e);
+  }
 });
 
-app.post("/user", (req, res) => {
-  res.send(blockChain.createNewUser());
+app.post("/user", async (req, res) => {
+  try {
+    const data = await blockChain.createNewUser();
+
+    res.send(data);
+  } catch (e) {
+    res.status(500).send(e);
+  }
 });
 
 app.get("/user", (req, res) => {
   res.send(blockChain.getAllUsers());
-});
-
-app.post("/user-secret", (req, res) => {
-  console.log(req.body);
-
-  const { publicKey, sedCode } = req.body;
-
-  const data = blockChain.getUserSecrets(publicKey, sedCode);
-
-  res.send(data);
 });
 
 app.post("/trans", (req, res) => {
@@ -63,29 +72,29 @@ app.post("/trans", (req, res) => {
 });
 
 // WebSocket-сервер для связи с другими узлами
-const wss = new WebSocket.Server({ port: WS_PORT });
+// const wss = new WebSocket.Server({ port: WS_PORT });
 
-wss.on("connection", (ws) => {
-  console.log("Новый узел подключен");
+// wss.on("connection", (ws) => {
+//   console.log("Новый узел подключен");
 
-  ws.on("message", (message: string) => {
-    const data = JSON.parse(message);
-    switch (data.type) {
-      case "block":
-        if (blockChain.isValidChain(blockChain.chain.concat(data.data))) {
-          blockChain.replaceChain(blockChain.chain.concat(data.data));
-        }
-        break;
-      case "user":
-        blockChain.addNewUserToChain(data.data);
-        break;
-    }
-  });
+//   ws.on("message", (message: string) => {
+//     const data = JSON.parse(message);
+//     switch (data.type) {
+//       case "block":
+//         if (blockChain.isValidChain(blockChain.chain.concat(data.data))) {
+//           blockChain.replaceChain(blockChain.chain.concat(data.data));
+//         }
+//         break;
+//       case "user":
+//         blockChain.addNewUserToChain(data.data);
+//         break;
+//     }
+//   });
 
-  ws.on("close", () => {
-    console.log("Узел отключен");
-  });
-});
+//   ws.on("close", () => {
+//     console.log("Узел отключен");
+//   });
+// });
 
 // Запускаем сервер
 app.listen(PORT, () => {

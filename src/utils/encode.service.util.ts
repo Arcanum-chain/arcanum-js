@@ -1,9 +1,4 @@
-import crypto from "node:crypto";
-
-import {
-  CLASSIC_IV_TRANSACTION,
-  DEFAULT_HASH_PREFIX,
-} from "../constants/default.hash.prefix";
+import { DEFAULT_HASH_PREFIX } from "../constants/default.hash.prefix";
 
 import type { TransactionDecoded } from "../transaction/transaction.interface";
 import type { EncodeSecretUserDto } from "./dto/encode-secret-user.dto";
@@ -72,19 +67,7 @@ export class EncodeUtilService {
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
 
-      const cipher = crypto.createCipheriv(
-        "aes-256-cbc",
-        Buffer.from(dto.blockHash.substring(DEFAULT_HASH_PREFIX.length), "hex"),
-        CLASSIC_IV_TRANSACTION
-      );
-
-      cipher.setEncoding("hex");
-
-      const encrypt = cipher.update(encodeValueString);
-
-      const encrypted = Buffer.concat([encrypt, cipher.final()]);
-
-      return `${DEFAULT_HASH_PREFIX}${encrypted.toString("hex")}`;
+      return `${DEFAULT_HASH_PREFIX}${encodeValueString}`;
     } catch (e) {
       throw e;
     }
@@ -92,28 +75,8 @@ export class EncodeUtilService {
 
   public decodeTransactionData(encodeValueString: string, blockHash: string) {
     try {
-      const decipher = crypto.createDecipheriv(
-        "aes-256-cbc",
-        Buffer.from(blockHash.substring(DEFAULT_HASH_PREFIX.length), "hex"),
-        CLASSIC_IV_TRANSACTION
-      );
-
-      const blockSize = 16; // Размер блока AES
-      const decryptedParts = [];
-
-      for (let i = 0; i < encodeValueString.length; i += blockSize) {
-        const block = encodeValueString.substring(i, i + blockSize);
-        const decryptedPart = decipher.update(block, "hex", "utf-8");
-        decryptedParts.push(decryptedPart);
-      }
-
-      const finalDecrypted = decipher.final("utf-8");
-      decryptedParts.push(finalDecrypted);
-
-      const decryptedDataDirty = decryptedParts.join("");
-
       //   @ts-expect-error
-      const decodedString = decryptedDataDirty
+      const decodedString = encodeValueString
         .match(/.{1,2}/g)
         .map((e) => String.fromCharCode(parseInt(e, 16)))
         .join("");

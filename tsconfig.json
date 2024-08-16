@@ -8,6 +8,8 @@
     "module": "commonjs",
     "rootDir": "./src",
     "moduleResolution": "Node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"]

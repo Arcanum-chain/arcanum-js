@@ -1,10 +1,6 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EncodeUtilService = void 0;
-const node_crypto_1 = __importDefault(require("node:crypto"));
 const default_hash_prefix_1 = require("../constants/default.hash.prefix");
 class EncodeUtilService {
     encodeUserSecret(dto) {
@@ -54,11 +50,7 @@ class EncodeUtilService {
             const encodeValueString = [...new TextEncoder().encode(encodeVal)]
                 .map((b) => b.toString(16).padStart(2, "0"))
                 .join("");
-            const cipher = node_crypto_1.default.createCipheriv("aes-256-cbc", Buffer.from(dto.blockHash.substring(default_hash_prefix_1.DEFAULT_HASH_PREFIX.length), "hex"), default_hash_prefix_1.CLASSIC_IV_TRANSACTION);
-            cipher.setEncoding("hex");
-            const encrypt = cipher.update(encodeValueString);
-            const encrypted = Buffer.concat([encrypt, cipher.final()]);
-            return `${default_hash_prefix_1.DEFAULT_HASH_PREFIX}${encrypted.toString("hex")}`;
+            return `${default_hash_prefix_1.DEFAULT_HASH_PREFIX}${encodeValueString}`;
         }
         catch (e) {
             throw e;
@@ -66,18 +58,7 @@ class EncodeUtilService {
     }
     decodeTransactionData(encodeValueString, blockHash) {
         try {
-            const decipher = node_crypto_1.default.createDecipheriv("aes-256-cbc", Buffer.from(blockHash.substring(default_hash_prefix_1.DEFAULT_HASH_PREFIX.length), "hex"), default_hash_prefix_1.CLASSIC_IV_TRANSACTION);
-            const blockSize = 16;
-            const decryptedParts = [];
-            for (let i = 0; i < encodeValueString.length; i += blockSize) {
-                const block = encodeValueString.substring(i, i + blockSize);
-                const decryptedPart = decipher.update(block, "hex", "utf-8");
-                decryptedParts.push(decryptedPart);
-            }
-            const finalDecrypted = decipher.final("utf-8");
-            decryptedParts.push(finalDecrypted);
-            const decryptedDataDirty = decryptedParts.join("");
-            const decodedString = decryptedDataDirty
+            const decodedString = encodeValueString
                 .match(/.{1,2}/g)
                 .map((e) => String.fromCharCode(parseInt(e, 16)))
                 .join("");

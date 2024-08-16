@@ -15,7 +15,10 @@ export declare class BlockTransaction {
     readonly gasService: BlockChainGas;
     readonly users: Record<string, User>;
     timestamp: number;
-    constructor({ sender, to, amount, indexBlock, blockHash, users, timestamp, }: BlockTransactionConstructor);
+    private keyService;
+    readonly signature: string;
+    private readonly store;
+    constructor({ sender, to, amount, indexBlock, blockHash, users, timestamp, signature, }: BlockTransactionConstructor);
     private createTransactionHash;
     createTransaction(): Transaction;
     transfer(): boolean;
@@ -23,6 +26,7 @@ export declare class BlockTransaction {
         sender: User;
         to: User;
     };
+    verifySign(data: string, signature: string, publicKey: string): boolean;
     private createCommission;
     private require;
 }

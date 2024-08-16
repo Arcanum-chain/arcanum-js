@@ -1,10 +1,10 @@
 import { Block } from "../block/block";
 export declare class MiningBlock {
-    private chain;
     private verifyBlockService;
-    difficulty: number;
     powPrefix: string;
-    constructor(chain: Block[]);
+    private readonly metadataStore;
+    private readonly store;
+    constructor();
     mineBlock(block: Block): Block;
     calculateDifficulty(): number;
 }

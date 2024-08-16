@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { Block } from "../block/block";
+import { IBlock } from "../block/block.interface";
 import { DefaultDumpingPaths } from "../constants";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
@@ -11,7 +11,7 @@ export class DumpingService {
     this.createDataDir();
   }
 
-  public async dumpingBlockchain(blockchain: Block[]) {
+  public async dumpingBlockchain(blockchain: IBlock[]) {
     try {
       await this.writableDataBlockchain(
         blockchain,

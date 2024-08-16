@@ -1,25 +1,13 @@
-import type { User } from "../user/user.interface";
+import type { ReturnCreateUserDto, User } from "../user/user.interface";
 export declare class BlockChainUser {
     private users;
-    private readonly encodeService;
     private readonly convertLaService;
+    private readonly keyService;
+    private readonly store;
     constructor(users: Record<User["publicKey"], User>);
-    createNewUser(): {
-        user: User;
-        secrets: {
-            privateKey: string;
-            sedCode: string;
-        };
-    };
-    generateSedCode(privateKey: string): string;
+    createNewUser(): Promise<ReturnCreateUserDto>;
     private checkIsEmptyAddress;
     private generatePublicAndPrivateKey;
     getUserBalance(address: string): number;
-    private encryptUserSecretData;
-    getSecretUserData(publicKey: string, sedCode: string): {
-        privateKey: string;
-        sedCode: string;
-    };
-    private decodeUserData;
 }
 //# sourceMappingURL=user.d.ts.map

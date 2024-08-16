@@ -1,1 +1,1 @@
-{"version":3,"file":"blockchain.error.js","sourceRoot":"./src/index.ts/","sources":["errors/blockchain.error.ts"],"names":[],"mappings":";;;AAAA,MAAa,eAAgB,SAAQ,KAAK;IACxC,YAAY,GAAW;QACrB,KAAK,CAAC,GAAG,CAAC,CAAC;IACb,CAAC;CACF;AAJD,0CAIC"}
+{"version":3,"file":"blockchain.error.js","sourceRoot":"./src/index.ts/","sources":["errors/blockchain.error.ts"],"names":[],"mappings":";;;AAAA,qEAGkC;AAElC,MAAa,eAAgB,SAAQ,KAAK;IAGxC,YAAY,IAA0B;QACpC,KAAK,CAAC,4CAAmB,CAAC,IAAI,CAAC,CAAC,CAAC;QAEjC,IAAI,CAAC,IAAI,GAAG,IAAI,CAAC;IACnB,CAAC;CACF;AARD,0CAQC"}

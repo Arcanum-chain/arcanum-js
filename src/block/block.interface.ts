@@ -8,9 +8,7 @@ export interface BlockConstructor {
 }
 
 export interface IBlock {
-  calculateHash: () => string;
-
-  readonly index: number;
+  index: number;
   readonly timestamp: number;
   prevBlockHash: string;
   hash: string;

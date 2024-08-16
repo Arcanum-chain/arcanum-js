@@ -1,33 +1,62 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const ws_1 = __importDefault(require("ws"));
 const peers_constanrs_1 = require("./constants/peers.constanrs");
 const chain_1 = require("./chain/chain");
+const chocolateJo_1 = require("./chocolateJo/chocolateJo");
+const dumping_1 = require("./dumping/dumping");
+const n2n_protocol_1 = require("./n2nProtocol/n2n.protocol");
 const blockChain = new chain_1.BlockChain();
+const dump = new dumping_1.DumpingService();
+const protocol = new n2n_protocol_1.N2NProtocol(Number(process.env.WS_PORT), process.env.WS_NODE_URL, "0xewfkfmfew", { isMainNode: JSON.parse(process.env.IS_MAIN_NODE) });
+const chocolateJo = new chocolateJo_1.ChocolateJo(protocol);
+if (JSON.parse(process.env.IS_MAIN_NODE)) {
+    blockChain.createGenesisBlock();
+}
+protocol.createServer();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.get("/chain", (req, res) => {
-    res.json(blockChain.chain);
+    try {
+        res.json(blockChain.getChain());
+    }
+    catch (e) {
+        res.json(e);
+    }
 });
 app.post("/mine", (req, res) => {
-    blockChain.mineBlock();
-    res.send("Блок добыт");
+    try {
+        blockChain.mineBlock();
+        res.send("Блок добыт");
+    }
+    catch (e) {
+        console.log(e);
+        res.status(400).send(e);
+    }
 });
-app.post("/user", (req, res) => {
-    res.send(blockChain.createNewUser());
-});
+app.post("/user", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const data = yield blockChain.createNewUser();
+        res.send(data);
+    }
+    catch (e) {
+        res.status(500).send(e);
+    }
+}));
 app.get("/user", (req, res) => {
     res.send(blockChain.getAllUsers());
-});
-app.post("/user-secret", (req, res) => {
-    console.log(req.body);
-    const { publicKey, sedCode } = req.body;
-    const data = blockChain.getUserSecrets(publicKey, sedCode);
-    res.send(data);
 });
 app.post("/trans", (req, res) => {
     try {
@@ -39,26 +68,6 @@ app.post("/trans", (req, res) => {
         console.log(e);
         res.status(500).send(e.message);
     }
-});
-const wss = new ws_1.default.Server({ port: peers_constanrs_1.WS_PORT });
-wss.on("connection", (ws) => {
-    console.log("Новый узел подключен");
-    ws.on("message", (message) => {
-        const data = JSON.parse(message);
-        switch (data.type) {
-            case "block":
-                if (blockChain.isValidChain(blockChain.chain.concat(data.data))) {
-                    blockChain.replaceChain(blockChain.chain.concat(data.data));
-                }
-                break;
-            case "user":
-                blockChain.addNewUserToChain(data.data);
-                break;
-        }
-    });
-    ws.on("close", () => {
-        console.log("Узел отключен");
-    });
 });
 app.listen(peers_constanrs_1.PORT, () => {
     console.log(`Сервер запущен на порту ${peers_constanrs_1.PORT}`);

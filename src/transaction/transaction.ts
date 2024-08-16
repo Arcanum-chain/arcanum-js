@@ -2,9 +2,12 @@ import crypto from "node:crypto";
 
 import { BASIC_CONVERT_VALUES_ENUM, DEFAULT_HASH_PREFIX } from "../constants";
 
+import { BlockChainError, BlockChainErrorCodes } from "../errors";
 import { BlockChainGas } from "../gas/gas";
+import { BlockChainStore } from "../store";
 import { ConvertToLaService } from "../utils/convert.la.service.util";
 import { EncodeUtilService } from "../utils/encode.service.util";
+import { KeyService } from "../utils/keys.service.util";
 
 import type { User } from "../user/user.interface";
 import type {
@@ -24,6 +27,9 @@ export class BlockTransaction {
   public readonly gasService: BlockChainGas;
   public readonly users: Record<string, User> = {};
   public timestamp: number;
+  private keyService: KeyService;
+  public readonly signature: string;
+  private readonly store: typeof BlockChainStore = BlockChainStore;
 
   constructor({
     sender,
@@ -33,6 +39,7 @@ export class BlockTransaction {
     blockHash,
     users,
     timestamp,
+    signature,
   }: BlockTransactionConstructor) {
     this.sender = sender;
     this.to = to;
@@ -45,6 +52,8 @@ export class BlockTransaction {
     this.gasService = new BlockChainGas(0.5);
     this.users = users;
     this.timestamp = timestamp;
+    this.keyService = new KeyService();
+    this.signature = signature;
   }
 
   private createTransactionHash(): string {
@@ -55,6 +64,7 @@ export class BlockTransaction {
       blockHash: this.blockHash,
       timestamp: this.timestamp,
       indexBlock: this.indexBlock,
+      signature: this.signature,
     });
 
     const key = `${this.sender}`;
@@ -69,19 +79,22 @@ export class BlockTransaction {
 
   public createTransaction(): Transaction {
     try {
-      const payload = {
-        blockHash: this.blockHash,
-        indexBlock: this.indexBlock,
+      const payload: Transaction["data"] = {
         sender: this.sender,
         to: this.to,
         amount: this.amount,
         timestamp: this.timestamp,
-        users: this.users,
       };
 
-      const data = this.encodeService.encodeTransactionData(payload);
+      const verifyData = JSON.stringify({
+        sender: this.sender,
+        to: this.to,
+        amount: this.amount,
+      });
 
-      return { data, blockHash: this.blockHash, hash: this.hash };
+      // this.verifySign(verifyData, this.signature, this.sender);
+
+      return { data: payload, blockHash: this.blockHash, hash: this.hash };
     } catch (e) {
       throw e;
     }
@@ -99,19 +112,22 @@ export class BlockTransaction {
 
       const newSenderBalance = this.convertLaService.toRei(
         String(
-          +this.convertLaService.toLa(this.users[sender.publicKey].balance) -
+          +this.convertLaService.toLa(
+            this.store.getUserByPublicKey(sender.publicKey).balance
+          ) -
             (laAmount + gas)
         )
       );
       const newToBalance = this.convertLaService.toRei(
         String(
-          +this.convertLaService.toLa(this.users[to.publicKey].balance) +
-            laAmount
+          +this.convertLaService.toLa(
+            this.store.getUserByPublicKey(to.publicKey).balance
+          ) + laAmount
         )
       );
 
-      this.users[sender.publicKey].balance = newSenderBalance;
-      this.users[to.publicKey].balance = newToBalance.toString();
+      this.store.updateUserBalance(sender.publicKey, newSenderBalance);
+      this.store.updateUserBalance(to.publicKey, newToBalance.toString());
 
       return true;
     } catch (e) {
@@ -121,11 +137,11 @@ export class BlockTransaction {
 
   public checkTransferUsers(senderAdr: string, toAdr: string) {
     try {
-      const sender = this.users[senderAdr];
+      const sender = this.store.getUserByPublicKey(senderAdr);
 
       this.require(sender !== undefined, "Sender not found");
 
-      const to = this.users[toAdr];
+      const to = this.store.getUserByPublicKey(toAdr);
 
       this.require(to !== undefined, "Participient not found");
 
@@ -135,13 +151,41 @@ export class BlockTransaction {
     }
   }
 
+  public verifySign(data: string, signature: string, publicKey: string) {
+    try {
+      const publicKeyWithHeaders = this.keyService.addHeadersToKey(
+        publicKey,
+        "PUBLIC"
+      );
+
+      const verifier = crypto.createVerify("sha256");
+      verifier.update(data);
+      verifier.end();
+
+      const isValid = verifier.verify(
+        publicKeyWithHeaders,
+        Buffer.from(signature, "base64")
+      );
+
+      if (!isValid) {
+        throw new BlockChainError(
+          BlockChainErrorCodes.INVALID_VERIFY_TRANSACTION
+        );
+      } else {
+        return true;
+      }
+    } catch {
+      throw new BlockChainError(
+        BlockChainErrorCodes.INVALID_VERIFY_TRANSACTION
+      );
+    }
+  }
+
   private createCommission(senderBal: number) {
     try {
       const gas = this.gasService.calculateGasPrice(
         BASIC_CONVERT_VALUES_ENUM.LA
       );
-
-      console.log(senderBal, gas);
 
       if (senderBal <= gas) {
         throw new Error("It is impossible to pay for gas transactions");

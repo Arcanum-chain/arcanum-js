@@ -1,5 +1,9 @@
 export interface User {
   readonly publicKey: string;
   balance: string;
-  readonly data: string;
+}
+
+export interface ReturnCreateUserDto {
+  readonly user: User;
+  readonly privateKey: string;
 }

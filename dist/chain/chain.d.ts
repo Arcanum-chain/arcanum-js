@@ -3,42 +3,33 @@ import type { Transaction } from "../transaction/transaction.interface";
 import type { User } from "../user/user.interface";
 export declare class BlockChain {
     chain: Block[];
-    mappingChain: Record<string, Block>;
     readonly pendingTransactions: Transaction[];
     private readonly peers;
     private users;
     private blockChainUser;
     private verifyBlockService;
     private calculateRandomBlockToData;
+    private readonly store;
     constructor();
     createGenesisBlock(): Block;
-    getLatestBlock(): Block;
+    getChain(): import("../block/block.interface").IBlock[];
+    getLatestBlock(): import("../block/block.interface").IBlock;
     getBlockByHash(blockHash: string): Block;
-    addBlock(): Block;
     isValidChain(chain: Block[]): boolean;
-    mineBlock(): Block | Error | undefined;
+    mineBlock(): Error | Block | undefined;
     replaceChain(newChain: Block[]): void;
     broadcastBlock(block: Block): void;
     broadcastUser(user: User): void;
-    createTransaction({ sender, to, amount, }: {
+    createTransaction({ sender, to, amount, signature, }: {
         sender: string;
         to: string;
         amount: number;
+        signature: string;
     }): false | Transaction;
     addNewUserToChain(newUsers: User): boolean;
-    createNewUser(): {
-        user: {
-            balance: string;
-            publicKey: string;
-            data: string;
-        };
-    };
+    createNewUser(): Promise<import("../user/user.interface").ReturnCreateUserDto>;
     getUserBalance(address: string): number;
     getAllUsers(): User[];
-    getUserSecrets(publicKey: string, sedCode: string): {
-        privateKey: string;
-        sedCode: string;
-    };
     private minerReward;
 }
 //# sourceMappingURL=chain.d.ts.map

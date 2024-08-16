@@ -5,7 +5,7 @@ import { BlockLimits } from "../constants";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
 class MetadataBlockChainStore extends EventEmitter {
-  private difficulty: number = BlockLimits.MIN_DIFFICULTY;
+  public difficulty: number = BlockLimits.MIN_DIFFICULTY;
   private lastVerifyBlockInChain: Block | undefined;
 
   public get getDifficulty(): number {

@@ -1,6 +1,11 @@
 import type { User } from "../user/user.interface";
 export interface Transaction {
-    readonly data: string;
+    readonly data: {
+        sender: string;
+        amount: number;
+        to: string;
+        timestamp: number;
+    };
     blockHash: string;
     readonly hash: string;
 }
@@ -24,5 +29,6 @@ export interface BlockTransactionConstructor {
     readonly blockHash: string;
     readonly timestamp: number;
     readonly users: Record<string, User>;
+    readonly signature: string;
 }
 //# sourceMappingURL=transaction.interface.d.ts.map

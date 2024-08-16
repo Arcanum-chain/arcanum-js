@@ -6,7 +6,7 @@ import type { IBlockData } from "../blockData/blockData.interface";
 import type { BlockConstructor } from "./block.interface";
 
 export class Block {
-  public readonly index: number;
+  public index: number;
   public readonly timestamp: number;
   public prevBlockHash: string = "";
   public hash: string = "";

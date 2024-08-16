@@ -1,5 +1,6 @@
 export enum BlockChainErrorCodes {
   CONNECT_NODE_ERROR = 100,
+  IS_MY_NODE = 105,
   INVALID_CONSENSUS_STATUS = 101,
   INVALID_USERS_DATA_BY_NODE = 102,
   INVALID_TRANSACTIONS_DATA_BY_NODE = 103,
@@ -17,6 +18,8 @@ export enum BlockChainErrorCodes {
   NOT_FOUND_ENTITY = 403,
   FAIL_SAVE_TRANSACTION_TO_MEM_PULL = 404,
   ERROR_IN_METADATA_STORE = 405,
+  INVALID_VERIFY_TRANSACTION = 500,
+  INVALID_USER_KEY = 501,
 }
 
 export const BlockChainTextError: Record<BlockChainErrorCodes, string> = {
@@ -49,4 +52,9 @@ export const BlockChainTextError: Record<BlockChainErrorCodes, string> = {
   [BlockChainErrorCodes.FAIL_SAVE_TRANSACTION_TO_MEM_PULL]:
     "Fail save transaction to mempull!!!",
   [BlockChainErrorCodes.ERROR_IN_METADATA_STORE]: "Error in metadata store!!!",
+  [BlockChainErrorCodes.INVALID_VERIFY_TRANSACTION]:
+    "Invalid verify transaction!!!",
+  [BlockChainErrorCodes.INVALID_USER_KEY]:
+    "Invalid user key, permission denied!!!",
+  [BlockChainErrorCodes.IS_MY_NODE]: "You node doesnt verify you block!!!",
 };

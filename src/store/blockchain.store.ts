@@ -3,31 +3,39 @@ import EventEmitter from "events";
 import { EventMessage } from "../constants";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
-import type { Block } from "../block/block";
+import { IBlock } from "../block/block.interface";
 import type { BlockTransaction } from "../transaction/transaction";
 import type { User } from "../user/user.interface";
 
 class BlockChainStore extends EventEmitter {
-  public chain: Map<Block["hash"], Block> = new Map();
+  public chain: Record<IBlock["hash"], IBlock> = {};
   public users: Record<User["publicKey"], User> = {};
   public memPullTransactions: Map<BlockTransaction["hash"], BlockTransaction> =
     new Map();
 
-  public synchronizeChain(newChain: Block[]) {
+  public getChain(): IBlock[] {
     try {
-      this.chain.clear();
+      return Object.values(this.chain);
+    } catch {
+      throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+    }
+  }
+
+  public synchronizeChain(newChain: IBlock[]) {
+    try {
+      this.chain = {};
 
       for (const block of newChain) {
-        this.chain.set(block.hash, block);
+        this.chain[block.hash] = block;
       }
     } catch (e) {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }
   }
 
-  public getBlockByHash(blockHash: string): Block {
+  public getBlockByHash(blockHash: string): IBlock {
     try {
-      const block = this.chain.get(blockHash);
+      const block = this.chain[blockHash];
 
       if (block) {
         return block;
@@ -39,12 +47,11 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public setNewBlockToChain(newBlock: Block) {
+  public setNewBlockToChain(newBlock: IBlock) {
     try {
-      this.chain.set(newBlock.hash, newBlock);
+      this.chain[newBlock.hash] = newBlock;
       this.emit(EventMessage.BLOCK_ADDED, newBlock);
     } catch (e) {
-      console.log(e);
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }
   }
@@ -121,6 +128,27 @@ class BlockChainStore extends EventEmitter {
   public getAllTransactionsFromMemPull() {
     try {
       return Object.values(this.memPullTransactions);
+    } catch {
+      throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+    }
+  }
+
+  public updateUserBalance(publicKey: string, balance: string): boolean {
+    try {
+      const user = this.users[publicKey];
+
+      if (!user) {
+        throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+      }
+
+      user.balance = balance;
+
+      this.emit(EventMessage.UPDATE_USER_BALANCE, {
+        userKey: publicKey,
+        newBalance: balance,
+      });
+
+      return true;
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }

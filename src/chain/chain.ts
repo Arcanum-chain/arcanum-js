@@ -27,7 +27,7 @@ export class BlockChain {
   private readonly store: typeof BlockChainStore = BlockChainStore;
 
   constructor() {
-    this.chain = IS_MAIN_NODE ? [this.createGenesisBlock()] : [];
+    this.chain = IS_MAIN_NODE ? [] : [];
     this.peers = PEERS;
     this.broadcastBlock = this.broadcastBlock.bind(this);
     this.users = {};
@@ -57,14 +57,21 @@ export class BlockChain {
     const block = new Block(payload);
 
     this.store.setNewBlockToChain(block);
-
-    this.broadcastBlock(block);
+    this.chain.push(block);
 
     return block;
   }
 
+  public getChain() {
+    try {
+      return this.store.getChain();
+    } catch (e) {
+      throw e;
+    }
+  }
+
   public getLatestBlock() {
-    return this.chain[this.chain.length - 1];
+    return this.store.getChain()[this.store.getChain().length - 1];
   }
 
   public getBlockByHash(blockHash: string) {
@@ -85,24 +92,24 @@ export class BlockChain {
 
   public mineBlock() {
     const payload: BlockConstructor = {
-      index: this.chain.length,
+      index: this.getLatestBlock()?.index + 1,
       timestamp: Date.now(),
       data: {
         transactions: {},
       },
-      prevBlockHash: this.getLatestBlock().hash,
+      prevBlockHash: this.getLatestBlock()?.hash ?? "",
     };
 
     const newBlock = new Block(payload);
 
-    new MiningBlock(this.chain).mineBlock(newBlock);
+    new MiningBlock().mineBlock(newBlock);
 
     this.chain.push(newBlock);
     this.store.setNewBlockToChain(newBlock);
 
     const isValidChain = this.isValidChain(this.chain);
 
-    this.broadcastBlock(newBlock);
+    // this.broadcastBlock(newBlock);
 
     if (isValidChain) {
       return newBlock;
@@ -152,10 +159,12 @@ export class BlockChain {
     sender,
     to,
     amount,
+    signature,
   }: {
     sender: string;
     to: string;
     amount: number;
+    signature: string;
   }) {
     try {
       const transaction = new BlockTransaction({
@@ -166,6 +175,7 @@ export class BlockChain {
         indexBlock: 0,
         blockHash: this.chain[this.chain.length - 1].hash,
         users: this.users,
+        signature,
       });
 
       const result =
@@ -199,15 +209,11 @@ export class BlockChain {
     }
   }
 
-  public createNewUser() {
+  public async createNewUser() {
     try {
-      const data = this.blockChainUser.createNewUser();
+      const data = await this.blockChainUser.createNewUser();
 
-      this.addNewUserToChain(data.user);
-
-      this.broadcastUser(data.user);
-
-      return { user: { ...data.user, balance: data.user.balance.toString() } };
+      return data;
     } catch (e) {
       throw e;
     }
@@ -222,15 +228,7 @@ export class BlockChain {
   }
 
   public getAllUsers() {
-    return Object.values(this.users);
-  }
-
-  public getUserSecrets(publicKey: string, sedCode: string) {
-    try {
-      return this.blockChainUser.getSecretUserData(publicKey, sedCode);
-    } catch (e) {
-      throw e;
-    }
+    return this.store.getAllUsers();
   }
 
   private minerReward(minerAddress: string) {

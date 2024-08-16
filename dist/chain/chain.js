@@ -1,10 +1,20 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BlockChain = void 0;
 const ws_1 = __importDefault(require("ws"));
+const store_1 = require("../store");
 const block_1 = require("../block/block");
 const calcuateBlockToData_1 = require("../calculateBlockToData/calcuateBlockToData");
 const mining_1 = require("../mining/mining");
@@ -16,11 +26,10 @@ const peers_constanrs_1 = require("../constants/peers.constanrs");
 class BlockChain {
     constructor() {
         this.chain = [];
-        this.mappingChain = {};
         this.pendingTransactions = [];
         this.users = {};
-        this.mappingChain = {};
-        this.chain = peers_constanrs_1.IS_MAIN_NODE ? [this.createGenesisBlock()] : [];
+        this.store = store_1.BlockChainStore;
+        this.chain = peers_constanrs_1.IS_MAIN_NODE ? [] : [];
         this.peers = peers_constanrs_1.PEERS;
         this.broadcastBlock = this.broadcastBlock.bind(this);
         this.users = {};
@@ -44,31 +53,23 @@ class BlockChain {
             data: blockData,
         };
         const block = new block_1.Block(payload);
-        const blockHash = block.hash;
-        this.mappingChain[blockHash] = block;
-        this.broadcastBlock(block);
+        this.store.setNewBlockToChain(block);
+        this.chain.push(block);
         return block;
+    }
+    getChain() {
+        try {
+            return this.store.getChain();
+        }
+        catch (e) {
+            throw e;
+        }
     }
     getLatestBlock() {
-        return this.chain[this.chain.length - 1];
+        return this.store.getChain()[this.store.getChain().length - 1];
     }
     getBlockByHash(blockHash) {
-        return this.mappingChain[blockHash];
-    }
-    addBlock() {
-        const payload = {
-            index: this.getLatestBlock().index + 1,
-            timestamp: Date.now(),
-            data: {
-                transactions: {},
-            },
-            prevBlockHash: this.getLatestBlock().hash,
-        };
-        const block = new block_1.Block(payload);
-        this.chain.push(block);
-        this.mappingChain[block.hash] = block;
-        this.broadcastBlock(block);
-        return block;
+        return this.chain[0];
     }
     isValidChain(chain) {
         for (let i = 1; i < chain.length; i++) {
@@ -81,20 +82,20 @@ class BlockChain {
         return true;
     }
     mineBlock() {
+        var _a, _b, _c;
         const payload = {
-            index: this.chain.length,
+            index: ((_a = this.getLatestBlock()) === null || _a === void 0 ? void 0 : _a.index) + 1,
             timestamp: Date.now(),
             data: {
                 transactions: {},
             },
-            prevBlockHash: this.getLatestBlock().hash,
+            prevBlockHash: (_c = (_b = this.getLatestBlock()) === null || _b === void 0 ? void 0 : _b.hash) !== null && _c !== void 0 ? _c : "",
         };
         const newBlock = new block_1.Block(payload);
-        new mining_1.MiningBlock(this.chain).mineBlock(newBlock);
+        new mining_1.MiningBlock().mineBlock(newBlock);
         this.chain.push(newBlock);
-        this.mappingChain[newBlock.hash] = newBlock;
+        this.store.setNewBlockToChain(newBlock);
         const isValidChain = this.isValidChain(this.chain);
-        this.broadcastBlock(newBlock);
         if (isValidChain) {
             return newBlock;
         }
@@ -136,7 +137,7 @@ class BlockChain {
             throw e;
         }
     }
-    createTransaction({ sender, to, amount, }) {
+    createTransaction({ sender, to, amount, signature, }) {
         try {
             const transaction = new transaction_1.BlockTransaction({
                 sender,
@@ -146,6 +147,7 @@ class BlockChain {
                 indexBlock: 0,
                 blockHash: this.chain[this.chain.length - 1].hash,
                 users: this.users,
+                signature,
             });
             const result = this.calculateRandomBlockToData.mutateBlockToAddTransaction(transaction);
             return result;
@@ -163,7 +165,7 @@ class BlockChain {
             if (!newUsers.publicKey.startsWith(default_hash_prefix_1.DEFAULT_HASH_PREFIX)) {
                 throw new Error("Invalid hash");
             }
-            this.users[newUsers.publicKey] = newUsers;
+            this.store.setNewUser(newUsers);
             return true;
         }
         catch (e) {
@@ -171,15 +173,15 @@ class BlockChain {
         }
     }
     createNewUser() {
-        try {
-            const data = this.blockChainUser.createNewUser();
-            this.users[data.user.publicKey] = data.user;
-            this.broadcastUser(data.user);
-            return { user: Object.assign(Object.assign({}, data.user), { balance: data.user.balance.toString() }) };
-        }
-        catch (e) {
-            throw e;
-        }
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const data = yield this.blockChainUser.createNewUser();
+                return data;
+            }
+            catch (e) {
+                throw e;
+            }
+        });
     }
     getUserBalance(address) {
         try {
@@ -190,15 +192,7 @@ class BlockChain {
         }
     }
     getAllUsers() {
-        return Object.values(this.users);
-    }
-    getUserSecrets(publicKey, sedCode) {
-        try {
-            return this.blockChainUser.getSecretUserData(publicKey, sedCode);
-        }
-        catch (e) {
-            throw e;
-        }
+        return this.store.getAllUsers();
     }
     minerReward(minerAddress) {
         try {
