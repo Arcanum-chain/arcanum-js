@@ -16,18 +16,16 @@ export declare class BlockTransaction {
     readonly users: Record<string, User>;
     timestamp: number;
     private keyService;
+    fee: number;
     readonly signature: string;
     private readonly store;
+    private readonly txActions;
     constructor({ sender, to, amount, indexBlock, blockHash, users, timestamp, signature, }: BlockTransactionConstructor);
     private createTransactionHash;
     createTransaction(): Transaction;
-    transfer(): boolean;
-    checkTransferUsers(senderAdr: string, toAdr: string): {
-        sender: User;
-        to: User;
-    };
+    private calculateFee;
     verifySign(data: string, signature: string, publicKey: string): boolean;
     private createCommission;
-    private require;
+    private validate;
 }
 //# sourceMappingURL=transaction.d.ts.map

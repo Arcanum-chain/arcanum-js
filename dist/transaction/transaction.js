@@ -12,14 +12,15 @@ const store_1 = require("../store");
 const convert_la_service_util_1 = require("../utils/convert.la.service.util");
 const encode_service_util_1 = require("../utils/encode.service.util");
 const keys_service_util_1 = require("../utils/keys.service.util");
+const transactionActions_1 = require("./transactionActions");
 class BlockTransaction {
     constructor({ sender, to, amount, indexBlock, blockHash, users, timestamp, signature, }) {
         this.users = {};
+        this.fee = 0;
         this.store = store_1.BlockChainStore;
         this.sender = sender;
         this.to = to;
         this.amount = amount;
-        this.hash = this.createTransactionHash();
         this.indexBlock = indexBlock;
         this.blockHash = blockHash;
         this.encodeService = new encode_service_util_1.EncodeUtilService();
@@ -29,6 +30,10 @@ class BlockTransaction {
         this.timestamp = timestamp;
         this.keyService = new keys_service_util_1.KeyService();
         this.signature = signature;
+        this.hash = this.createTransactionHash();
+        this.txActions = new transactionActions_1.TransactionActions();
+        this.calculateFee();
+        this.validate();
     }
     createTransactionHash() {
         const data = JSON.stringify({
@@ -60,37 +65,22 @@ class BlockTransaction {
                 to: this.to,
                 amount: this.amount,
             });
-            return { data: payload, blockHash: this.blockHash, hash: this.hash };
+            return {
+                data: payload,
+                blockHash: this.blockHash,
+                hash: this.hash,
+                fee: this.fee,
+            };
         }
         catch (e) {
             throw e;
         }
     }
-    transfer() {
+    calculateFee() {
         try {
-            const { sender, to } = this.checkTransferUsers(this.sender, this.to);
-            const senderBal = +this.convertLaService.toLa(sender.balance);
-            const laAmount = +this.convertLaService.toLa(this.amount.toString());
-            const { updatedSenderBal, gas } = this.createCommission(senderBal);
-            this.require(updatedSenderBal >= laAmount, "Insufficient funds");
-            const newSenderBalance = this.convertLaService.toRei(String(+this.convertLaService.toLa(this.store.getUserByPublicKey(sender.publicKey).balance) -
-                (laAmount + gas)));
-            const newToBalance = this.convertLaService.toRei(String(+this.convertLaService.toLa(this.store.getUserByPublicKey(to.publicKey).balance) + laAmount));
-            this.store.updateUserBalance(sender.publicKey, newSenderBalance);
-            this.store.updateUserBalance(to.publicKey, newToBalance.toString());
-            return true;
-        }
-        catch (e) {
-            throw e;
-        }
-    }
-    checkTransferUsers(senderAdr, toAdr) {
-        try {
-            const sender = this.store.getUserByPublicKey(senderAdr);
-            this.require(sender !== undefined, "Sender not found");
-            const to = this.store.getUserByPublicKey(toAdr);
-            this.require(to !== undefined, "Participient not found");
-            return { sender, to };
+            const fee = this.gasService.calculateGasPrice("rei");
+            this.fee = fee;
+            return fee;
         }
         catch (e) {
             throw e;
@@ -126,12 +116,14 @@ class BlockTransaction {
             throw e;
         }
     }
-    require(logic, msg) {
+    validate() {
         try {
-            if (logic) {
-                return true;
-            }
-            throw new Error(msg);
+            this.txActions.checkTransferUsers(this.sender, this.to);
+            const sender = this.store.getUserByPublicKey(this.sender);
+            const { updatedSenderBal, gas } = this.createCommission(+this.convertLaService.toLa(sender.balance));
+            const laAmount = +this.convertLaService.toLa(String(this.amount));
+            this.fee = +this.convertLaService.toRei(String(gas));
+            this.txActions.require(updatedSenderBal >= laAmount, "Insufficient funds");
         }
         catch (e) {
             throw e;

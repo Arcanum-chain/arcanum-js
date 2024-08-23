@@ -3,15 +3,19 @@ import { networkInterfaces } from "node:os";
 import { v4 } from "uuid";
 import WebSocket, { WebSocketServer } from "ws";
 
+import { DumpingService } from "../dumping/dumping";
 import { Node2NodeAdapter } from "../node-adapter/node-adapter";
+import { RecoverService } from "../recover/recover.service";
 import { PeersStore } from "../store";
 import { N2NHandleMessagesService } from "./n2n.handle.messages";
 import { SerializeProtocolData } from "./serialize.data";
 
+import type { IBlock } from "@/block/block.interface";
 import { MessageTypes } from "./constants/message.types";
 import type { N2NProtocolConstructorInterface } from "./interfaces/constructor.interface";
 import type { N2NNode } from "./interfaces/node.interface";
 import type { N2NRequest } from "./interfaces/req.interface";
+import type { ResponseGetAllBlockchainData } from "./interfaces/res-all-blockchain-data.interface";
 import type { N2NResponse } from "./interfaces/res.interface";
 
 export class N2NProtocol {
@@ -23,6 +27,8 @@ export class N2NProtocol {
   public store: typeof PeersStore = PeersStore;
   private handleMsgService: N2NHandleMessagesService;
   private readonly n2nBlockChainAdapter: Node2NodeAdapter;
+  private readonly dumpingService: DumpingService;
+  private readonly recoverService: RecoverService;
 
   constructor(
     private readonly port: number,
@@ -33,13 +39,32 @@ export class N2NProtocol {
     this.serializeService = new SerializeProtocolData();
     this.props = props ?? {};
     this.isMainNode = props?.isMainNode ?? false;
-    this.generateNodeId();
+    this.dumpingService = new DumpingService();
+    this.recoverService = new RecoverService();
+    this.recoverNodeId();
     this.getMainNodeVerify();
     this.handleMsgService = new N2NHandleMessagesService(
       this.nodeId,
       this.isMainNode
     );
     this.n2nBlockChainAdapter = new Node2NodeAdapter();
+  }
+
+  private async recoverNodeId() {
+    try {
+      const data = await this.recoverService.recoverNodeId();
+
+      if (data) {
+        this.nodeId = data;
+
+        return;
+      } else {
+        const newHash = this.generateNodeId();
+        this.dumpingService.saveNodeIdN2N(newHash);
+      }
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   private getMainNodeVerify() {
@@ -60,7 +85,9 @@ export class N2NProtocol {
         return;
       }
 
-      const ws = new WebSocket(this.mainNodeUrl);
+      const ws = new WebSocket(this.mainNodeUrl, {
+        handshakeTimeout: 1000,
+      });
 
       ws.on("open", () => {
         console.log(
@@ -83,13 +110,14 @@ export class N2NProtocol {
 
       ws.on("message", (msg: string) => {
         const message = this.serializeService.deserialize(msg, "res");
-        this.successfulVerifyNewNode(message as N2NResponse);
+        this.successfulVerifyNewNode(message as N2NResponse<any>);
       });
 
       ws.on("close", () => {
         console.log("Node disconnected :(");
       });
     } catch (e) {
+      console.log(e);
       throw e;
     }
   }
@@ -101,7 +129,9 @@ export class N2NProtocol {
       Object.values(peers)
         .filter((node) => node.nodeId !== this.nodeId)
         .forEach((peer: N2NNode) => {
-          const ws = new WebSocket(peer.url);
+          const ws = new WebSocket(peer.url, {
+            handshakeTimeout: 1000,
+          });
 
           ws.on("open", () => {
             this.store.addActiveNode(this.nodeId, this.publicKey);
@@ -127,7 +157,7 @@ export class N2NProtocol {
 
   public sendMsgAllToNodes<T>(data: T, msgType: MessageTypes) {
     try {
-      const message: N2NResponse = {
+      const message: N2NResponse<T> = {
         message: msgType,
         payload: {
           data: data,
@@ -188,42 +218,72 @@ export class N2NProtocol {
     }
   }
 
-  private sendResMessage(msg: N2NResponse, ws: WebSocket) {
+  private sendResMessage(msg: N2NResponse<any>, ws: WebSocket) {
     try {
-      const serializedMessage = this.serializeService.serialize(msg);
-      ws.send(serializedMessage);
+      return new Promise((resolve, reject) => {
+        ws.on("message", (msg: string) => {
+          const response = this.serializeService.deserialize(msg, "res");
+          resolve(response as N2NResponse<any>);
+        });
+
+        ws.on("error", (error) => {
+          reject(error);
+        });
+
+        const serializedMessage = this.serializeService.serialize(msg);
+        ws.send(serializedMessage);
+      });
+      // const serializedMessage = this.serializeService.serialize(msg);
+
+      // ws.on("error", (e) => {
+      //   console.log("Sender Error:", e);
+      // });
+
+      // ws.send(serializedMessage);
     } catch (e) {
       throw e;
     }
   }
 
-  private successfulVerifyNewNode(data: N2NResponse) {
+  private successfulVerifyNewNode(data: N2NResponse<any>) {
     try {
       if (data.message === MessageTypes.SUCCESSFUL_VERIFY_NEW_NODE) {
-        this.store.protocolNodes = data.payload.data.list;
-        this.store.protocolNodesActive = data.payload.data.actives;
-        this.n2nBlockChainAdapter.synchronizeBlockChain(
-          data.payload.data.blockChain
-        );
+        const payload = data.payload.data as ResponseGetAllBlockchainData;
+
+        this.store.protocolNodes = payload.list;
+        this.store.protocolNodesActive = payload.actives;
+        this.n2nBlockChainAdapter.synchronizeBlockChain(payload.blockChain);
+        this.n2nBlockChainAdapter.synchronizeUser(payload.users);
+        this.n2nBlockChainAdapter.synchronizeTxMemPool(payload.txsInMemPool);
+        this.n2nBlockChainAdapter.synchronizeMetadata(payload.metadata);
         return;
       }
 
       // throw new BlockChainError(BlockChainErrorCodes.INVALID_VERIFY_NEW_NODE);
     } catch (e) {
+      console.log(e);
       throw e;
     }
   }
 
-  private broadcastMessage(message: N2NResponse) {
+  private broadcastMessage(message: N2NResponse<any>) {
     if (this.wss) {
-      console.log("Activs node:", this.store.getActiveNodes());
-
       this.store.getActiveNodes().forEach((client: N2NNode) => {
         if (client.nodeId !== this.nodeId) {
-          const ws = new WebSocket(client.url);
+          const ws = new WebSocket(client.url, {
+            handshakeTimeout: 1000,
+          });
 
           ws.on("open", () => {
-            this.sendResMessage(message, ws);
+            this.sendResMessage(message, ws)
+              .then()
+              .catch((e) => console.log(e));
+          });
+
+          ws.on("message", (msg: string) => {
+            const data = this.serializeService.deserialize(msg, "res");
+
+            this.handleMessage(data as N2NResponse<any>, ws);
           });
 
           ws.on("error", () => {
@@ -234,13 +294,15 @@ export class N2NProtocol {
     }
   }
 
-  private handleMessage(msg: N2NRequest | N2NResponse, ws: WebSocket) {
+  private handleMessage(msg: N2NRequest | N2NResponse<any>, ws: WebSocket) {
     try {
       switch (msg.message) {
         case MessageTypes.GET_MAIN_NODE:
           const sendMsg = this.handleMsgService.getMainNode(msg as N2NRequest);
 
-          this.sendResMessage(sendMsg, ws);
+          this.sendResMessage(sendMsg, ws)
+            .then()
+            .catch((e) => console.log(e));
 
           break;
         case MessageTypes.CONNECT_NODE:
@@ -251,13 +313,26 @@ export class N2NProtocol {
 
           break;
         case MessageTypes.BLOCK:
-          const sendMsgVerifyBlock = this.handleMsgService.addNewBlockFromNode(
-            msg as N2NResponse
-          );
+          if (this.nodeId !== (msg as N2NResponse<any>).payload.senderNodeId) {
+            const sendMsgVerifyBlock =
+              this.handleMsgService.addNewBlockFromNode(
+                msg as N2NResponse<IBlock>
+              );
 
-          if (sendMsgVerifyBlock) {
-            this.sendResMessage(sendMsgVerifyBlock, ws);
+            console.log("Send");
+
+            this.sendResMessage(sendMsgVerifyBlock, ws)
+              .then((res) => console.log("Response:", res))
+              .catch((e) => console.log(e));
           }
+
+          break;
+        case MessageTypes.NODES_VERIFY_BLOCK:
+          console.log("Verify");
+
+          this.handleMsgService.verifyBlockResFromOtherNode(
+            msg as N2NResponse<any>
+          );
 
           break;
       }

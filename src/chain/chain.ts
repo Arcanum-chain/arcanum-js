@@ -3,7 +3,6 @@ import WebSocket from "ws";
 import { BlockChainStore } from "../store";
 
 import { Block } from "../block/block";
-import { CalculateBlockToData } from "../calculateBlockToData/calcuateBlockToData";
 import { MiningBlock } from "../mining/mining";
 import { BlockTransaction } from "../transaction/transaction";
 import { BlockChainUser } from "../user/user";
@@ -18,12 +17,10 @@ import type { User } from "../user/user.interface";
 
 export class BlockChain {
   public chain: Block[] = [];
-  readonly pendingTransactions: Transaction[] = [];
   private readonly peers: string[];
   private users: Record<User["publicKey"], User> = {};
   private blockChainUser: BlockChainUser;
   private verifyBlockService: VerifyBlockService;
-  private calculateRandomBlockToData: CalculateBlockToData;
   private readonly store: typeof BlockChainStore = BlockChainStore;
 
   constructor() {
@@ -33,9 +30,6 @@ export class BlockChain {
     this.users = {};
     this.blockChainUser = new BlockChainUser(this.users);
     this.verifyBlockService = new VerifyBlockService();
-    this.calculateRandomBlockToData = new CalculateBlockToData({
-      blockChain: this.chain,
-    });
 
     if (this) {
       return this;
@@ -55,6 +49,8 @@ export class BlockChain {
     };
 
     const block = new Block(payload);
+
+    block.verify = true;
 
     this.store.setNewBlockToChain(block);
     this.chain.push(block);
@@ -90,7 +86,7 @@ export class BlockChain {
     return true;
   }
 
-  public mineBlock() {
+  public mineBlock(minerAddress: string) {
     const payload: BlockConstructor = {
       index: this.getLatestBlock()?.index + 1,
       timestamp: Date.now(),
@@ -102,7 +98,7 @@ export class BlockChain {
 
     const newBlock = new Block(payload);
 
-    new MiningBlock().mineBlock(newBlock);
+    new MiningBlock(minerAddress).mineBlock(newBlock);
 
     this.chain.push(newBlock);
     this.store.setNewBlockToChain(newBlock);
@@ -114,7 +110,7 @@ export class BlockChain {
     if (isValidChain) {
       return newBlock;
     } else if (!isValidChain) {
-      return new Error("Not valid chain!!!!");
+      throw new Error("Not valid chain!!!!");
     }
   }
 
@@ -155,6 +151,14 @@ export class BlockChain {
     }
   }
 
+  public getTxs(): Transaction[] {
+    try {
+      return this.store.getAllTransactionsFromMemPull();
+    } catch (e) {
+      throw e;
+    }
+  }
+
   public createTransaction({
     sender,
     to,
@@ -173,17 +177,25 @@ export class BlockChain {
         timestamp: Date.now(),
         to,
         indexBlock: 0,
-        blockHash: this.chain[this.chain.length - 1].hash,
+        blockHash: this.store.getChain()[this.store.getChain().length - 1].hash,
         users: this.users,
         signature,
-      });
+      }).createTransaction();
 
-      const result =
-        this.calculateRandomBlockToData.mutateBlockToAddTransaction(
-          transaction
-        );
+      this.store.setNewTransactionToMemPull(transaction);
 
-      return result;
+      // const payload: Omit<Transaction, "blockHash"> = {
+      //   hash: transaction.hash,
+      //   data: {
+      //     sender: transaction.sender,
+      //     amount: transaction.amount,
+      //     to: transaction.to,
+      //     timestamp: transaction.timestamp,
+      //   },
+      //   fee: transaction.fee,
+      // };
+
+      return transaction;
     } catch (e) {
       throw e;
     }

@@ -11,5 +11,6 @@ export interface IBlock {
     prevBlockHash: string;
     hash: string;
     readonly data: IBlockData;
+    verify: boolean;
 }
 //# sourceMappingURL=block.interface.d.ts.map

@@ -1,7 +1,7 @@
 import type { User } from "../user/user.interface";
 
 export interface Transaction {
-  readonly data: {
+  data: {
     sender: string;
     amount: number;
     to: string;
@@ -9,6 +9,7 @@ export interface Transaction {
   };
   blockHash: string;
   readonly hash: string;
+  readonly fee: number;
 }
 
 export interface TransactionDecoded {

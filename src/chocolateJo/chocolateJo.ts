@@ -7,11 +7,9 @@ import { N2NProtocol } from "../n2nProtocol/n2n.protocol";
 import type { IBlock } from "../block/block.interface";
 import type { User } from "../user/user.interface";
 import type { MessageEvent } from "../utils";
-import type { ApprovalBlock } from "./interface/approval.interface";
 
 export class ChocolateJo {
   private readonly protocol: N2NProtocol;
-  public pendingBlocks: Map<ApprovalBlock["hash"], ApprovalBlock> = new Map();
 
   constructor(protocol: N2NProtocol) {
     this.protocol = protocol;
@@ -22,11 +20,6 @@ export class ChocolateJo {
   private broadcastNewBlock(block?: MessageEvent<IBlock>) {
     try {
       if (!block) return;
-
-      this.pendingBlocks.set(block.msg.hash, {
-        ...block.msg,
-        approvalCount: 0,
-      });
 
       this.protocol.sendMsgAllToNodes<IBlock>(
         block.msg as IBlock,

@@ -16,7 +16,6 @@ exports.BlockChain = void 0;
 const ws_1 = __importDefault(require("ws"));
 const store_1 = require("../store");
 const block_1 = require("../block/block");
-const calcuateBlockToData_1 = require("../calculateBlockToData/calcuateBlockToData");
 const mining_1 = require("../mining/mining");
 const transaction_1 = require("../transaction/transaction");
 const user_1 = require("../user/user");
@@ -26,7 +25,6 @@ const peers_constanrs_1 = require("../constants/peers.constanrs");
 class BlockChain {
     constructor() {
         this.chain = [];
-        this.pendingTransactions = [];
         this.users = {};
         this.store = store_1.BlockChainStore;
         this.chain = peers_constanrs_1.IS_MAIN_NODE ? [] : [];
@@ -35,9 +33,6 @@ class BlockChain {
         this.users = {};
         this.blockChainUser = new user_1.BlockChainUser(this.users);
         this.verifyBlockService = new verify_block_util_service_1.VerifyBlockService();
-        this.calculateRandomBlockToData = new calcuateBlockToData_1.CalculateBlockToData({
-            blockChain: this.chain,
-        });
         if (this) {
             return this;
         }
@@ -53,6 +48,7 @@ class BlockChain {
             data: blockData,
         };
         const block = new block_1.Block(payload);
+        block.verify = true;
         this.store.setNewBlockToChain(block);
         this.chain.push(block);
         return block;
@@ -81,7 +77,7 @@ class BlockChain {
         }
         return true;
     }
-    mineBlock() {
+    mineBlock(minerAddress) {
         var _a, _b, _c;
         const payload = {
             index: ((_a = this.getLatestBlock()) === null || _a === void 0 ? void 0 : _a.index) + 1,
@@ -92,7 +88,7 @@ class BlockChain {
             prevBlockHash: (_c = (_b = this.getLatestBlock()) === null || _b === void 0 ? void 0 : _b.hash) !== null && _c !== void 0 ? _c : "",
         };
         const newBlock = new block_1.Block(payload);
-        new mining_1.MiningBlock().mineBlock(newBlock);
+        new mining_1.MiningBlock(minerAddress).mineBlock(newBlock);
         this.chain.push(newBlock);
         this.store.setNewBlockToChain(newBlock);
         const isValidChain = this.isValidChain(this.chain);
@@ -100,7 +96,7 @@ class BlockChain {
             return newBlock;
         }
         else if (!isValidChain) {
-            return new Error("Not valid chain!!!!");
+            throw new Error("Not valid chain!!!!");
         }
     }
     replaceChain(newChain) {
@@ -137,6 +133,14 @@ class BlockChain {
             throw e;
         }
     }
+    getTxs() {
+        try {
+            return this.store.getAllTransactionsFromMemPull();
+        }
+        catch (e) {
+            throw e;
+        }
+    }
     createTransaction({ sender, to, amount, signature, }) {
         try {
             const transaction = new transaction_1.BlockTransaction({
@@ -145,12 +149,12 @@ class BlockChain {
                 timestamp: Date.now(),
                 to,
                 indexBlock: 0,
-                blockHash: this.chain[this.chain.length - 1].hash,
+                blockHash: this.store.getChain()[this.store.getChain().length - 1].hash,
                 users: this.users,
                 signature,
-            });
-            const result = this.calculateRandomBlockToData.mutateBlockToAddTransaction(transaction);
-            return result;
+            }).createTransaction();
+            this.store.setNewTransactionToMemPull(transaction);
+            return transaction;
         }
         catch (e) {
             throw e;

@@ -1,21 +1,27 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MiningBlock = void 0;
+const coinBaseTransaction_1 = require("../coinBaseTransaction/coinBaseTransaction");
 const constants_1 = require("../constants");
+const memPool_1 = require("../memPool/memPool");
 const store_1 = require("../store");
-const verify_block_util_service_1 = require("../utils/verify.block.util.service");
+const transactionActions_1 = require("../transaction/transactionActions");
+const utils_1 = require("../utils");
 class MiningBlock {
-    constructor() {
+    constructor(minerAddress) {
+        this.minerAddress = minerAddress;
         this.powPrefix = constants_1.BlockLimits.DEFAULT_HASH_PREFIX;
         this.metadataStore = store_1.MetadataBlockchainStore;
         this.store = store_1.BlockChainStore;
-        this.verifyBlockService = new verify_block_util_service_1.VerifyBlockService();
+        this.verifyBlockService = new utils_1.VerifyBlockService();
+        this.memPool = memPool_1.MemPool.getInstance();
+        this.txActions = new transactionActions_1.TransactionActions();
+        this.merkleTreeService = new utils_1.MerkleTree();
     }
     mineBlock(block) {
         try {
             let nonce = 0;
             this.calculateDifficulty();
-            console.log("Block to mine:", block);
             while (true) {
                 const blockHash = block.calculateHash();
                 const proofingHash = this.verifyBlockService.genHash(blockHash + nonce);
@@ -28,10 +34,50 @@ class MiningBlock {
                     block.data.blockHash = `${constants_1.DEFAULT_HASH_PREFIX}${proofingHash}`;
                     block.index =
                         this.store.getChain()[this.store.getChain().length - 1].index + 1;
-                    return block;
+                    return this.appendCoinBaseTx(block);
                 }
                 nonce++;
             }
+        }
+        catch (e) {
+            throw e;
+        }
+    }
+    calculateTxsMerkleRoot() {
+        try {
+            const txs = this.memPool.getPendingTxsToMineBlock();
+            const { root } = this.merkleTreeService.buildTxsMerkleTree(txs);
+            return { rootHash: root, transactions: txs };
+        }
+        catch (e) {
+            throw e;
+        }
+    }
+    appendTxsToBlock(block) {
+        try {
+            if (block.index !== 0) {
+                const { rootHash, transactions } = this.calculateTxsMerkleRoot();
+                block.data.txMerkleRoot = rootHash;
+                transactions.forEach((tx) => {
+                    block.data.transactions[tx.hash] = tx;
+                });
+                this.memPool.deletePendingTxPollToConfirmMineBlock();
+            }
+        }
+        catch (e) {
+            throw e;
+        }
+    }
+    appendCoinBaseTx(block) {
+        try {
+            const tx = new coinBaseTransaction_1.CoinBaseTransaction({
+                blockHash: block.hash,
+                timestamp: Date.now(),
+                minerAddress: this.minerAddress,
+            });
+            block.data.coinBase = tx.createCoinBaseTx();
+            this.appendTxsToBlock(block);
+            return block;
         }
         catch (e) {
             throw e;

@@ -6,6 +6,7 @@ export declare class Block {
     prevBlockHash: string;
     hash: string;
     data: IBlockData;
+    verify: boolean;
     constructor({ index, timestamp, data, prevBlockHash, }: BlockConstructor);
     calculateHash(): string;
 }

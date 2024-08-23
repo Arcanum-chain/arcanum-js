@@ -7,6 +7,7 @@ class Block {
     constructor({ index, timestamp, data, prevBlockHash = "", }) {
         this.prevBlockHash = "";
         this.hash = "";
+        this.verify = false;
         this.index = index;
         this.timestamp = timestamp;
         this.prevBlockHash = prevBlockHash;

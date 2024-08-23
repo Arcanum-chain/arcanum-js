@@ -1,3 +1,5 @@
 /node_modules
 /.env
 /dist
+/gui/node_modules
+/gui/build

@@ -14,14 +14,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const peers_constanrs_1 = require("./constants/peers.constanrs");
+const auto_shedule_service_1 = require("./auto-schedule/auto-shedule.service");
 const chain_1 = require("./chain/chain");
 const chocolateJo_1 = require("./chocolateJo/chocolateJo");
 const dumping_1 = require("./dumping/dumping");
+const memPool_1 = require("./memPool/memPool");
 const n2n_protocol_1 = require("./n2nProtocol/n2n.protocol");
 const blockChain = new chain_1.BlockChain();
 const dump = new dumping_1.DumpingService();
 const protocol = new n2n_protocol_1.N2NProtocol(Number(process.env.WS_PORT), process.env.WS_NODE_URL, "0xewfkfmfew", { isMainNode: JSON.parse(process.env.IS_MAIN_NODE) });
 const chocolateJo = new chocolateJo_1.ChocolateJo(protocol);
+new auto_shedule_service_1.AutoScheduleService();
+memPool_1.MemPool.getInstance();
 if (JSON.parse(process.env.IS_MAIN_NODE)) {
     blockChain.createGenesisBlock();
 }
@@ -38,12 +42,22 @@ app.get("/chain", (req, res) => {
 });
 app.post("/mine", (req, res) => {
     try {
-        blockChain.mineBlock();
+        blockChain.mineBlock(req.body.key);
         res.send("Блок добыт");
     }
     catch (e) {
         console.log(e);
         res.status(400).send(e);
+    }
+});
+app.get("/trans", (req, res) => {
+    try {
+        const result = blockChain.getTxs();
+        res.json(result);
+    }
+    catch (e) {
+        console.log(e);
+        res.status(400).send("Fail");
     }
 });
 app.post("/user", (req, res) => __awaiter(void 0, void 0, void 0, function* () {

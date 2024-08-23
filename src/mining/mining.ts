@@ -1,7 +1,10 @@
 import { Block } from "../block/block";
+import { CoinBaseTransaction } from "../coinBaseTransaction/coinBaseTransaction";
 import { BlockLimits, DEFAULT_HASH_PREFIX } from "../constants";
+import { MemPool } from "../memPool/memPool";
 import { BlockChainStore, MetadataBlockchainStore } from "../store";
-import { VerifyBlockService } from "../utils/verify.block.util.service";
+import { TransactionActions } from "../transaction/transactionActions";
+import { MerkleTree, VerifyBlockService } from "../utils";
 
 export class MiningBlock {
   private verifyBlockService: VerifyBlockService;
@@ -9,17 +12,21 @@ export class MiningBlock {
   private readonly metadataStore: typeof MetadataBlockchainStore =
     MetadataBlockchainStore;
   private readonly store: typeof BlockChainStore = BlockChainStore;
+  private readonly memPool: MemPool;
+  private readonly txActions: TransactionActions;
+  private readonly merkleTreeService: MerkleTree;
 
-  constructor() {
+  constructor(public readonly minerAddress: string) {
     this.verifyBlockService = new VerifyBlockService();
+    this.memPool = MemPool.getInstance();
+    this.txActions = new TransactionActions();
+    this.merkleTreeService = new MerkleTree();
   }
 
   public mineBlock(block: Block) {
     try {
       let nonce = 0;
       this.calculateDifficulty();
-
-      console.log("Block to mine:", block);
 
       while (true) {
         const blockHash = block.calculateHash();
@@ -37,11 +44,58 @@ export class MiningBlock {
           block.index =
             this.store.getChain()[this.store.getChain().length - 1].index + 1;
 
-          return block;
+          return this.appendCoinBaseTx(block);
         }
 
         nonce++;
       }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  private calculateTxsMerkleRoot() {
+    try {
+      const txs = this.memPool.getPendingTxsToMineBlock();
+
+      const { root } = this.merkleTreeService.buildTxsMerkleTree(txs);
+
+      return { rootHash: root, transactions: txs };
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  private appendTxsToBlock(block: Block) {
+    try {
+      if (block.index !== 0) {
+        const { rootHash, transactions } = this.calculateTxsMerkleRoot();
+        block.data.txMerkleRoot = rootHash;
+
+        transactions.forEach((tx) => {
+          block.data.transactions[tx.hash] = tx;
+        });
+
+        this.memPool.deletePendingTxPollToConfirmMineBlock();
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  private appendCoinBaseTx(block: Block) {
+    try {
+      const tx = new CoinBaseTransaction({
+        blockHash: block.hash,
+        timestamp: Date.now(),
+        minerAddress: this.minerAddress,
+      });
+
+      block.data.coinBase = tx.createCoinBaseTx();
+
+      this.appendTxsToBlock(block);
+
+      return block;
     } catch (e) {
       throw e;
     }
@@ -55,12 +109,9 @@ export class MiningBlock {
       const currentTimestamp = Date.now();
       const timeTaken = currentTimestamp - lastBlockTimestamp;
 
-      // 2. Регулировка сложности
       if (timeTaken < BlockLimits.MAX_MINING_TIME / 2) {
-        // Если блок был найден слишком быстро, увеличиваем сложность
         this.metadataStore.difficulty += 1;
       } else if (timeTaken > BlockLimits.MAX_MINING_TIME * 2) {
-        // Если блок был найден слишком медленно, уменьшаем сложность
         this.metadataStore.difficulty -= 1;
       }
 

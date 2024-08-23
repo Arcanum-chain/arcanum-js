@@ -18,12 +18,17 @@ var BlockChainErrorCodes;
     BlockChainErrorCodes[BlockChainErrorCodes["FAIL_NODE_ID_DUMP"] = 303] = "FAIL_NODE_ID_DUMP";
     BlockChainErrorCodes[BlockChainErrorCodes["DOESNT_NOT_BLOCK_BY_HASH"] = 400] = "DOESNT_NOT_BLOCK_BY_HASH";
     BlockChainErrorCodes[BlockChainErrorCodes["FAIL_SYNCHRONIZE_CHAIN"] = 401] = "FAIL_SYNCHRONIZE_CHAIN";
+    BlockChainErrorCodes[BlockChainErrorCodes["FAIL_SYNCHRONIZE_CHAIN_METADATA"] = 406] = "FAIL_SYNCHRONIZE_CHAIN_METADATA";
     BlockChainErrorCodes[BlockChainErrorCodes["FAIL_SAVE_NEW_USER_TO_STORE"] = 402] = "FAIL_SAVE_NEW_USER_TO_STORE";
     BlockChainErrorCodes[BlockChainErrorCodes["NOT_FOUND_ENTITY"] = 403] = "NOT_FOUND_ENTITY";
     BlockChainErrorCodes[BlockChainErrorCodes["FAIL_SAVE_TRANSACTION_TO_MEM_PULL"] = 404] = "FAIL_SAVE_TRANSACTION_TO_MEM_PULL";
     BlockChainErrorCodes[BlockChainErrorCodes["ERROR_IN_METADATA_STORE"] = 405] = "ERROR_IN_METADATA_STORE";
     BlockChainErrorCodes[BlockChainErrorCodes["INVALID_VERIFY_TRANSACTION"] = 500] = "INVALID_VERIFY_TRANSACTION";
     BlockChainErrorCodes[BlockChainErrorCodes["INVALID_USER_KEY"] = 501] = "INVALID_USER_KEY";
+    BlockChainErrorCodes[BlockChainErrorCodes["FAIL_COINBASE_TX"] = 600] = "FAIL_COINBASE_TX";
+    BlockChainErrorCodes[BlockChainErrorCodes["BAD_DATA"] = 601] = "BAD_DATA";
+    BlockChainErrorCodes[BlockChainErrorCodes["FAIL_ROLLBACK_CB_TX"] = 602] = "FAIL_ROLLBACK_CB_TX";
+    BlockChainErrorCodes[BlockChainErrorCodes["INVALID_TXS_ROOT_HASH"] = 603] = "INVALID_TXS_ROOT_HASH";
 })(BlockChainErrorCodes || (exports.BlockChainErrorCodes = BlockChainErrorCodes = {}));
 exports.BlockChainTextError = {
     [BlockChainErrorCodes.CONNECT_NODE_ERROR]: "Connect node error!!!",
@@ -47,5 +52,10 @@ exports.BlockChainTextError = {
     [BlockChainErrorCodes.INVALID_VERIFY_TRANSACTION]: "Invalid verify transaction!!!",
     [BlockChainErrorCodes.INVALID_USER_KEY]: "Invalid user key, permission denied!!!",
     [BlockChainErrorCodes.IS_MY_NODE]: "You node doesnt verify you block!!!",
+    [BlockChainErrorCodes.FAIL_COINBASE_TX]: "Fail coinbase transaction to miner!!!",
+    [BlockChainErrorCodes.BAD_DATA]: "Invalid data!!!",
+    [BlockChainErrorCodes.FAIL_ROLLBACK_CB_TX]: "Fail rollback coinbase transaction!",
+    [BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN_METADATA]: "Fail synchronize chain metadata!!!",
+    [BlockChainErrorCodes.INVALID_TXS_ROOT_HASH]: "Invalid transactions in block root hash!!!",
 };
 //# sourceMappingURL=blockchain.code.errors.js.map

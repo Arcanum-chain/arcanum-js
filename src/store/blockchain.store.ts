@@ -3,15 +3,14 @@ import EventEmitter from "events";
 import { EventMessage } from "../constants";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
+import type { Transaction } from "@/transaction/transaction.interface";
 import { IBlock } from "../block/block.interface";
-import type { BlockTransaction } from "../transaction/transaction";
 import type { User } from "../user/user.interface";
 
 class BlockChainStore extends EventEmitter {
   public chain: Record<IBlock["hash"], IBlock> = {};
   public users: Record<User["publicKey"], User> = {};
-  public memPullTransactions: Map<BlockTransaction["hash"], BlockTransaction> =
-    new Map();
+  public memPullTransactions: Record<Transaction["hash"], Transaction> = {};
 
   public getChain(): IBlock[] {
     try {
@@ -29,6 +28,31 @@ class BlockChainStore extends EventEmitter {
         this.chain[block.hash] = block;
       }
     } catch (e) {
+      throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
+    }
+  }
+
+  public synchronizeUser(users: User[]) {
+    try {
+      this.users = {};
+
+      for (const user of users) {
+        this.users[user.publicKey] = user;
+      }
+    } catch {
+      throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
+    }
+  }
+
+  public synchronizeTxMemPool(transactions: Transaction[]) {
+    try {
+      this.memPullTransactions = {};
+
+      for (const tx of transactions) {
+        this.memPullTransactions[tx?.hash] = tx;
+        this.emit(EventMessage.TRANSACTION_ADD_IN_MEMPOOL, tx);
+      }
+    } catch {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }
   }
@@ -52,6 +76,14 @@ class BlockChainStore extends EventEmitter {
       this.chain[newBlock.hash] = newBlock;
       this.emit(EventMessage.BLOCK_ADDED, newBlock);
     } catch (e) {
+      throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
+    }
+  }
+
+  public setNewBlockToChainFromOtherNode(block: IBlock) {
+    try {
+      this.chain[block.hash] = block;
+    } catch {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }
   }
@@ -95,27 +127,28 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public setNewTransactionToMemPull(transaction: BlockTransaction): boolean {
+  public setNewTransactionToMemPull(transaction: Transaction): boolean {
     try {
-      if (this.memPullTransactions.get(transaction.hash)) {
+      if (this.memPullTransactions[transaction.hash]) {
         throw new Error();
       }
 
-      this.memPullTransactions.set(transaction.hash, transaction);
+      this.memPullTransactions[transaction.hash] = transaction;
 
       this.emit(EventMessage.TRANSACTION_ADD_IN_MEMPOOL, transaction);
 
       return true;
-    } catch {
+    } catch (e) {
+      console.log(e);
       throw new BlockChainError(
         BlockChainErrorCodes.FAIL_SAVE_TRANSACTION_TO_MEM_PULL
       );
     }
   }
 
-  public getTransactionByHash(transactionHash: string): BlockTransaction {
+  public getTransactionByHash(transactionHash: string): Transaction {
     try {
-      const transaction = this.memPullTransactions.get(transactionHash);
+      const transaction = this.memPullTransactions[transactionHash];
 
       if (!transaction) throw new Error();
 
@@ -149,6 +182,38 @@ class BlockChainStore extends EventEmitter {
       });
 
       return true;
+    } catch {
+      throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+    }
+  }
+
+  public deleteTxFromMemPool(txHash: string): boolean {
+    try {
+      const tx = this.memPullTransactions[txHash];
+
+      if (!tx) {
+        throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+      }
+
+      delete this.memPullTransactions[tx.hash];
+
+      return true;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  public setVerifyBlockByHash(hash: string): IBlock {
+    try {
+      const block = this.getBlockByHash(hash);
+
+      if (block.verify === true) {
+        throw new Error();
+      }
+
+      block.verify = true;
+
+      return block;
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }

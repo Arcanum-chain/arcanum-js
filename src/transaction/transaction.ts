@@ -8,6 +8,7 @@ import { BlockChainStore } from "../store";
 import { ConvertToLaService } from "../utils/convert.la.service.util";
 import { EncodeUtilService } from "../utils/encode.service.util";
 import { KeyService } from "../utils/keys.service.util";
+import { TransactionActions } from "./transactionActions";
 
 import type { User } from "../user/user.interface";
 import type {
@@ -28,8 +29,10 @@ export class BlockTransaction {
   public readonly users: Record<string, User> = {};
   public timestamp: number;
   private keyService: KeyService;
+  public fee: number = 0;
   public readonly signature: string;
   private readonly store: typeof BlockChainStore = BlockChainStore;
+  private readonly txActions: TransactionActions;
 
   constructor({
     sender,
@@ -44,7 +47,6 @@ export class BlockTransaction {
     this.sender = sender;
     this.to = to;
     this.amount = amount;
-    this.hash = this.createTransactionHash();
     this.indexBlock = indexBlock;
     this.blockHash = blockHash;
     this.encodeService = new EncodeUtilService();
@@ -54,6 +56,10 @@ export class BlockTransaction {
     this.timestamp = timestamp;
     this.keyService = new KeyService();
     this.signature = signature;
+    this.hash = this.createTransactionHash();
+    this.txActions = new TransactionActions();
+    this.calculateFee();
+    this.validate();
   }
 
   private createTransactionHash(): string {
@@ -94,58 +100,23 @@ export class BlockTransaction {
 
       // this.verifySign(verifyData, this.signature, this.sender);
 
-      return { data: payload, blockHash: this.blockHash, hash: this.hash };
+      return {
+        data: payload,
+        blockHash: this.blockHash,
+        hash: this.hash,
+        fee: this.fee,
+      };
     } catch (e) {
       throw e;
     }
   }
 
-  public transfer(): boolean {
+  private calculateFee(): number {
     try {
-      const { sender, to } = this.checkTransferUsers(this.sender, this.to);
+      const fee = this.gasService.calculateGasPrice("rei");
+      this.fee = fee;
 
-      const senderBal = +this.convertLaService.toLa(sender.balance);
-      const laAmount = +this.convertLaService.toLa(this.amount.toString());
-      const { updatedSenderBal, gas } = this.createCommission(senderBal);
-
-      this.require(updatedSenderBal >= laAmount, "Insufficient funds");
-
-      const newSenderBalance = this.convertLaService.toRei(
-        String(
-          +this.convertLaService.toLa(
-            this.store.getUserByPublicKey(sender.publicKey).balance
-          ) -
-            (laAmount + gas)
-        )
-      );
-      const newToBalance = this.convertLaService.toRei(
-        String(
-          +this.convertLaService.toLa(
-            this.store.getUserByPublicKey(to.publicKey).balance
-          ) + laAmount
-        )
-      );
-
-      this.store.updateUserBalance(sender.publicKey, newSenderBalance);
-      this.store.updateUserBalance(to.publicKey, newToBalance.toString());
-
-      return true;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  public checkTransferUsers(senderAdr: string, toAdr: string) {
-    try {
-      const sender = this.store.getUserByPublicKey(senderAdr);
-
-      this.require(sender !== undefined, "Sender not found");
-
-      const to = this.store.getUserByPublicKey(toAdr);
-
-      this.require(to !== undefined, "Participient not found");
-
-      return { sender, to };
+      return fee;
     } catch (e) {
       throw e;
     }
@@ -197,13 +168,23 @@ export class BlockTransaction {
     }
   }
 
-  private require(logic: boolean, msg: string) {
+  private validate() {
     try {
-      if (logic) {
-        return true;
-      }
+      this.txActions.checkTransferUsers(this.sender, this.to);
 
-      throw new Error(msg);
+      const sender = this.store.getUserByPublicKey(this.sender);
+
+      const { updatedSenderBal, gas } = this.createCommission(
+        +this.convertLaService.toLa(sender.balance)
+      );
+      const laAmount = +this.convertLaService.toLa(String(this.amount));
+
+      this.fee = +this.convertLaService.toRei(String(gas));
+
+      this.txActions.require(
+        updatedSenderBal >= laAmount,
+        "Insufficient funds"
+      );
     } catch (e) {
       throw e;
     }

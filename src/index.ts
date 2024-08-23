@@ -2,9 +2,11 @@ import express from "express";
 
 import { PORT } from "./constants/peers.constanrs";
 
+import { AutoScheduleService } from "./auto-schedule/auto-shedule.service";
 import { BlockChain } from "./chain/chain";
 import { ChocolateJo } from "./chocolateJo/chocolateJo";
 import { DumpingService } from "./dumping/dumping";
+import { MemPool } from "./memPool/memPool";
 import { N2NProtocol } from "./n2nProtocol/n2n.protocol";
 
 const blockChain = new BlockChain();
@@ -16,6 +18,8 @@ const protocol = new N2NProtocol(
   { isMainNode: JSON.parse(process.env.IS_MAIN_NODE as string) }
 );
 const chocolateJo = new ChocolateJo(protocol);
+new AutoScheduleService();
+MemPool.getInstance();
 
 if (JSON.parse(process.env.IS_MAIN_NODE as string)) {
   blockChain.createGenesisBlock();
@@ -36,11 +40,22 @@ app.get("/chain", (req, res) => {
 
 app.post("/mine", (req, res) => {
   try {
-    blockChain.mineBlock();
+    blockChain.mineBlock(req.body.key);
     res.send("Блок добыт");
   } catch (e) {
     console.log(e);
     res.status(400).send(e);
+  }
+});
+
+app.get("/trans", (req, res) => {
+  try {
+    const result = blockChain.getTxs();
+
+    res.json(result);
+  } catch (e) {
+    console.log(e);
+    res.status(400).send("Fail");
   }
 });
 

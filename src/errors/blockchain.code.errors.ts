@@ -14,12 +14,17 @@ export enum BlockChainErrorCodes {
   FAIL_NODE_ID_DUMP = 303,
   DOESNT_NOT_BLOCK_BY_HASH = 400,
   FAIL_SYNCHRONIZE_CHAIN = 401,
+  FAIL_SYNCHRONIZE_CHAIN_METADATA = 406,
   FAIL_SAVE_NEW_USER_TO_STORE = 402,
   NOT_FOUND_ENTITY = 403,
   FAIL_SAVE_TRANSACTION_TO_MEM_PULL = 404,
   ERROR_IN_METADATA_STORE = 405,
   INVALID_VERIFY_TRANSACTION = 500,
   INVALID_USER_KEY = 501,
+  FAIL_COINBASE_TX = 600,
+  BAD_DATA = 601,
+  FAIL_ROLLBACK_CB_TX = 602,
+  INVALID_TXS_ROOT_HASH = 603,
 }
 
 export const BlockChainTextError: Record<BlockChainErrorCodes, string> = {
@@ -57,4 +62,13 @@ export const BlockChainTextError: Record<BlockChainErrorCodes, string> = {
   [BlockChainErrorCodes.INVALID_USER_KEY]:
     "Invalid user key, permission denied!!!",
   [BlockChainErrorCodes.IS_MY_NODE]: "You node doesnt verify you block!!!",
+  [BlockChainErrorCodes.FAIL_COINBASE_TX]:
+    "Fail coinbase transaction to miner!!!",
+  [BlockChainErrorCodes.BAD_DATA]: "Invalid data!!!",
+  [BlockChainErrorCodes.FAIL_ROLLBACK_CB_TX]:
+    "Fail rollback coinbase transaction!",
+  [BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN_METADATA]:
+    "Fail synchronize chain metadata!!!",
+  [BlockChainErrorCodes.INVALID_TXS_ROOT_HASH]:
+    "Invalid transactions in block root hash!!!",
 };

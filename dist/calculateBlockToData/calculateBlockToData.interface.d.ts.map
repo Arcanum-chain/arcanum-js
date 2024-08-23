@@ -1,1 +1,0 @@
-{"version":3,"file":"calculateBlockToData.interface.d.ts","sourceRoot":"./src/index.ts/","sources":["calculateBlockToData/calculateBlockToData.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C,MAAM,WAAW,+BAA+B;IAC9C,UAAU,EAAE,KAAK,EAAE,CAAC;CACrB"}

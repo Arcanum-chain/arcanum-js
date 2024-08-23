@@ -11,6 +11,7 @@ export class Block {
   public prevBlockHash: string = "";
   public hash: string = "";
   public data: IBlockData;
+  public verify: boolean = false;
 
   constructor({
     index,

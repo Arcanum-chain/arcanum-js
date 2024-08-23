@@ -14,12 +14,17 @@ export declare enum BlockChainErrorCodes {
     FAIL_NODE_ID_DUMP = 303,
     DOESNT_NOT_BLOCK_BY_HASH = 400,
     FAIL_SYNCHRONIZE_CHAIN = 401,
+    FAIL_SYNCHRONIZE_CHAIN_METADATA = 406,
     FAIL_SAVE_NEW_USER_TO_STORE = 402,
     NOT_FOUND_ENTITY = 403,
     FAIL_SAVE_TRANSACTION_TO_MEM_PULL = 404,
     ERROR_IN_METADATA_STORE = 405,
     INVALID_VERIFY_TRANSACTION = 500,
-    INVALID_USER_KEY = 501
+    INVALID_USER_KEY = 501,
+    FAIL_COINBASE_TX = 600,
+    BAD_DATA = 601,
+    FAIL_ROLLBACK_CB_TX = 602,
+    INVALID_TXS_ROOT_HASH = 603
 }
 export declare const BlockChainTextError: Record<BlockChainErrorCodes, string>;
 //# sourceMappingURL=blockchain.code.errors.d.ts.map

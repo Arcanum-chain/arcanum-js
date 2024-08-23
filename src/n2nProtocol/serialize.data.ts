@@ -30,7 +30,7 @@ export class SerializeProtocolData {
         return JSON.parse(decodedString) as N2NRequest;
       }
 
-      return JSON.parse(decodedString) as N2NResponse;
+      return JSON.parse(decodedString) as N2NResponse<any>;
     } catch (e) {
       throw e;
     }

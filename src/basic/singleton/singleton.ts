@@ -3,7 +3,7 @@ export class Singleton {
 
   protected constructor() {}
 
-  protected static getInstance<T extends Singleton>(this: new () => T): T {
+  public static getInstance<T extends Singleton>(this: new () => T): T {
     if (!Singleton.instance) {
       Singleton.instance = new this();
     }
