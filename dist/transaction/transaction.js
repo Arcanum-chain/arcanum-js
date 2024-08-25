@@ -65,6 +65,7 @@ class BlockTransaction {
                 to: this.to,
                 amount: this.amount,
             });
+            this.verifySign(verifyData, this.signature, this.sender);
             return {
                 data: payload,
                 blockHash: this.blockHash,
@@ -100,7 +101,8 @@ class BlockTransaction {
                 return true;
             }
         }
-        catch (_a) {
+        catch (e) {
+            console.log(e);
             throw new errors_1.BlockChainError(errors_1.BlockChainErrorCodes.INVALID_VERIFY_TRANSACTION);
         }
     }

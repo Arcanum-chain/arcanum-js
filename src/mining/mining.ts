@@ -37,7 +37,8 @@ export class MiningBlock {
             hash: proofingHash,
             difficulty: this.metadataStore.getDifficulty,
             prefix: this.powPrefix,
-          })
+          }) &&
+          this.store.getPendingBlocks().length === 0
         ) {
           block.hash = `${DEFAULT_HASH_PREFIX}${proofingHash}`;
           block.data.blockHash = `${DEFAULT_HASH_PREFIX}${proofingHash}`;
@@ -71,10 +72,14 @@ export class MiningBlock {
       if (block.index !== 0) {
         const { rootHash, transactions } = this.calculateTxsMerkleRoot();
         block.data.txMerkleRoot = rootHash;
+        let totalFeeRei = 0;
 
         transactions.forEach((tx) => {
           block.data.transactions[tx.hash] = tx;
+          totalFeeRei += tx.fee;
         });
+
+        block.totalFeeRei = totalFeeRei;
 
         this.memPool.deletePendingTxPollToConfirmMineBlock();
       }

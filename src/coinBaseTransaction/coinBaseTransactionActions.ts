@@ -23,7 +23,7 @@ export class CoinBaseTxActions {
     }
   }
 
-  public transferCoinBase(): boolean {
+  private transferCoinBase(): boolean {
     try {
       const miner = this.store.getUserByPublicKey(this.coinBaseTx.minerAddress);
 

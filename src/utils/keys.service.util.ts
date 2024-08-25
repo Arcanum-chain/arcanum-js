@@ -5,17 +5,15 @@ import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
 export class KeyService {
   public addHeadersToKey(key: string, keyType: "PRIVATE" | "PUBLIC") {
-    try {
-      if (!key) {
-        throw new BlockChainError(BlockChainErrorCodes.INVALID_USER_KEY);
-      }
-
-      return `-----BEGIN ${keyType} KEY-----
-            ${key}
-            -----END ${keyType} KEY-----`;
-    } catch {
+    if (!key) {
       throw new BlockChainError(BlockChainErrorCodes.INVALID_USER_KEY);
     }
+
+    const data = `-----BEGIN ${keyType} KEY-----
+${key}
+-----END ${keyType} KEY-----`;
+
+    return data;
   }
 
   public async generateKeyPair() {

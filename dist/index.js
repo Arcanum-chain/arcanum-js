@@ -72,7 +72,7 @@ app.post("/user", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 app.get("/user", (req, res) => {
     res.send(blockChain.getAllUsers());
 });
-app.post("/trans", (req, res) => {
+app.post("/trans/", (req, res) => {
     try {
         const body = req.body;
         const result = blockChain.createTransaction(body);

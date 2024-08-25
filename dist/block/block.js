@@ -8,6 +8,7 @@ class Block {
         this.prevBlockHash = "";
         this.hash = "";
         this.verify = false;
+        this.totalFeeRei = 0;
         this.index = index;
         this.timestamp = timestamp;
         this.prevBlockHash = prevBlockHash;

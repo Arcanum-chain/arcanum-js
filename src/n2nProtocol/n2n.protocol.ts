@@ -60,6 +60,7 @@ export class N2NProtocol {
         return;
       } else {
         const newHash = this.generateNodeId();
+        this.nodeId = newHash;
         this.dumpingService.saveNodeIdN2N(newHash);
       }
     } catch (e) {

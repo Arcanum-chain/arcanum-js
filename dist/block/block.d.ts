@@ -7,6 +7,7 @@ export declare class Block {
     hash: string;
     data: IBlockData;
     verify: boolean;
+    totalFeeRei: number;
     constructor({ index, timestamp, data, prevBlockHash, }: BlockConstructor);
     calculateHash(): string;
 }

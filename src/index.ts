@@ -73,7 +73,7 @@ app.get("/user", (req, res) => {
   res.send(blockChain.getAllUsers());
 });
 
-app.post("/trans", (req, res) => {
+app.post("/trans/", (req, res) => {
   try {
     const body = req.body;
 

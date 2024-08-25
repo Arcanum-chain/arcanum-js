@@ -12,5 +12,6 @@ export interface IBlock {
     hash: string;
     readonly data: IBlockData;
     verify: boolean;
+    readonly totalFeeRei?: number;
 }
 //# sourceMappingURL=block.interface.d.ts.map

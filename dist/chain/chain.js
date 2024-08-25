@@ -16,6 +16,7 @@ exports.BlockChain = void 0;
 const ws_1 = __importDefault(require("ws"));
 const store_1 = require("../store");
 const block_1 = require("../block/block");
+const confirmationBlock_1 = require("../confirmationBlock");
 const mining_1 = require("../mining/mining");
 const transaction_1 = require("../transaction/transaction");
 const user_1 = require("../user/user");
@@ -27,6 +28,8 @@ class BlockChain {
         this.chain = [];
         this.users = {};
         this.store = store_1.BlockChainStore;
+        this.peersStore = store_1.PeersStore;
+        this.blockConfirmations = confirmationBlock_1.BlockConfirmationService;
         this.chain = peers_constanrs_1.IS_MAIN_NODE ? [] : [];
         this.peers = peers_constanrs_1.PEERS;
         this.broadcastBlock = this.broadcastBlock.bind(this);
@@ -49,8 +52,7 @@ class BlockChain {
         };
         const block = new block_1.Block(payload);
         block.verify = true;
-        this.store.setNewBlockToChain(block);
-        this.chain.push(block);
+        this.store.chain[block.hash] = block;
         return block;
     }
     getChain() {
@@ -88,15 +90,29 @@ class BlockChain {
             prevBlockHash: (_c = (_b = this.getLatestBlock()) === null || _b === void 0 ? void 0 : _b.hash) !== null && _c !== void 0 ? _c : "",
         };
         const newBlock = new block_1.Block(payload);
-        new mining_1.MiningBlock(minerAddress).mineBlock(newBlock);
-        this.chain.push(newBlock);
-        this.store.setNewBlockToChain(newBlock);
-        const isValidChain = this.isValidChain(this.chain);
-        if (isValidChain) {
-            return newBlock;
+        if (Object.values(this.peersStore.getAllNodes).length === 1 &&
+            Object.values(this.peersStore.getActiveNodes()).length === (1 || 0)) {
+            new mining_1.MiningBlock(minerAddress).mineBlock(newBlock);
+            this.store.newCreatedBlock(newBlock);
+            this.blockConfirmations.confirmBlock(newBlock.hash);
+            const isValidChain = this.isValidChain(this.chain);
+            if (isValidChain) {
+                return newBlock;
+            }
+            else if (!isValidChain) {
+                throw new Error("Not valid chain!!!!");
+            }
         }
-        else if (!isValidChain) {
-            throw new Error("Not valid chain!!!!");
+        if (this.store.getPendingBlocks().length == 0) {
+            new mining_1.MiningBlock(minerAddress).mineBlock(newBlock);
+            this.store.newCreatedBlock(newBlock);
+            const isValidChain = this.isValidChain(this.chain);
+            if (isValidChain) {
+                return newBlock;
+            }
+            else if (!isValidChain) {
+                throw new Error("Not valid chain!!!!");
+            }
         }
     }
     replaceChain(newChain) {

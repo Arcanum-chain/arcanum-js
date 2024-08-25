@@ -8,6 +8,8 @@ export declare class BlockChain {
     private blockChainUser;
     private verifyBlockService;
     private readonly store;
+    private readonly peersStore;
+    private readonly blockConfirmations;
     constructor();
     createGenesisBlock(): Block;
     getChain(): import("../block/block.interface").IBlock[];

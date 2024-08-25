@@ -14,4 +14,5 @@ export interface IBlock {
   hash: string;
   readonly data: IBlockData;
   verify: boolean;
+  readonly totalFeeRei?: number;
 }

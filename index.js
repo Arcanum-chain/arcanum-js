@@ -63,6 +63,8 @@ function verifySignature(data, signature, publicKey) {
   try {
     const publicKeyWithHeaders = addHeadersToKey(publicKey, "PUBLIC KEY");
 
+    console.log(publicKeyWithHeaders);
+
     const verifier = crypto.createVerify("sha256");
     verifier.update(data);
     verifier.end();
@@ -87,24 +89,27 @@ function verifySignature(data, signature, publicKey) {
 async function boostrap() {
   // const ec = new EC("secp256k1");
   const keyPair = await generateKeyPair();
+  const privateKey =
+    "MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgMnLNRySSTndYMdHsQ0LJrDOAsGZBO8w5I+tr+sU9kaqhRANCAARyNlvZyqbSq3pHNkZk03bkRJqAmKxUn5G1RkdlJA0nZjZkIwi2aopQiMbJ1EVqUwFSLuKfmtZHJQdWnG0kK4yZ";
 
   const transactionData = JSON.stringify({
-    to: "werewkrwrewr",
-    amount: "4234",
-    sender: "weriewrwr23rnfweew",
+    sender:
+      "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEcjZb2cqm0qt6RzZGZNN25ESagJisVJ+RtUZHZSQNJ2Y2ZCMItmqKUIjGydRFalMBUi7in5rWRyUHVpxtJCuMmQ==",
+    to: "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEL4wmzPezc+zI09vu4hz6QG/ArkP16xLEoW1GgPlb0WcVBbrwVzfJNOF0kDqVtY9IVmdUUPkMEbYY2gE+MtJwbQ==",
+    amount: 5,
   });
-  const signature = signData(transactionData, keyPair.privateKey);
-  const isValid = verifySignature(
-    transactionData,
-    signature,
-    // keyPair.publicKey
-    "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE3hgjz2m48YdcX7/npD5cFnY2N845zRBMSKR0XL4XtTL+ASyddR5kPlByF6VEM/uCVCboEC3ywtIvJPdk+uHJww=="
-  );
 
-  console.log("PublicKey:", keyPair.publicKey.toString("hex"));
-  console.log("PrivateKey:", keyPair.privateKey.toString("hex"));
-  console.log("Транзакция подписана:", isValid);
-  console.log("Sing data", signature);
+  const signature = signData(transactionData, privateKey);
+  // const isValid = verifySignature(
+  //   transactionData,
+  //   signature,
+  //   keyPair.publicKey
+  // );
+
+  // console.log("PublicKey:", keyPair.publicKey);
+  // console.log("PrivateKey:", keyPair.privateKey.toString("hex"));
+  // console.log("Транзакция подписана:", isValid);
+  console.log(signature);
 }
 
 boostrap();

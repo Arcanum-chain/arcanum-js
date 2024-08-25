@@ -11,10 +11,19 @@ class BlockChainStore extends EventEmitter {
   public chain: Record<IBlock["hash"], IBlock> = {};
   public users: Record<User["publicKey"], User> = {};
   public memPullTransactions: Record<Transaction["hash"], Transaction> = {};
+  public pendingBlocks: IBlock[] = [];
 
   public getChain(): IBlock[] {
     try {
       return Object.values(this.chain);
+    } catch {
+      throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+    }
+  }
+
+  public getPendingBlocks(): IBlock[] {
+    try {
+      return this.pendingBlocks;
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
@@ -71,10 +80,31 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public setNewBlockToChain(newBlock: IBlock) {
+  public newCreatedBlock(block: IBlock) {
     try {
-      this.chain[newBlock.hash] = newBlock;
-      this.emit(EventMessage.BLOCK_ADDED, newBlock);
+      this.pendingBlocks.push(block);
+      this.emit(EventMessage.BLOCK_ADDED, block);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  public setNewBlockToChain(newBlockHash: string): boolean {
+    try {
+      const block = this.pendingBlocks.filter(
+        ({ hash }) => hash === newBlockHash
+      )[0];
+
+      console.log(block);
+
+      if (!block) {
+        throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+      }
+
+      this.chain[block.hash] = block;
+      this.pendingBlocks = [];
+
+      return true;
     } catch (e) {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }

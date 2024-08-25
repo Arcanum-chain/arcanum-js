@@ -12,43 +12,46 @@ export class TransactionActions {
     this.convertLaService = new ConvertToLaService();
   }
 
-  public transfer(tx: Transaction): boolean {
-    try {
-      const { sender, to } = this.checkTransferUsers(
-        tx.data.sender,
-        tx.data.to
-      );
+  public transfer(tx: Transaction): Promise<unknown> {
+    return new Promise((res, rej) => {
+      try {
+        const { sender, to } = this.checkTransferUsers(
+          tx.data.sender,
+          tx.data.to
+        );
 
-      const senderBal = +this.convertLaService.toLa(sender.balance);
-      const laAmount = +this.convertLaService.toLa(tx.data.amount.toString());
-      const updatedSenderBal =
-        senderBal - +this.convertLaService.toLa(String(tx.fee));
+        const senderBal = +this.convertLaService.toLa(sender.balance);
+        const laAmount = +this.convertLaService.toLa(tx.data.amount.toString());
+        const updatedSenderBal =
+          senderBal - +this.convertLaService.toLa(String(tx.fee));
 
-      this.require(updatedSenderBal >= laAmount, "Insufficient funds");
+        this.require(updatedSenderBal >= laAmount, "Insufficient funds");
 
-      const newSenderBalance = this.convertLaService.toRei(
-        String(
-          +this.convertLaService.toLa(
-            this.store.getUserByPublicKey(sender.publicKey).balance
-          ) -
-            (laAmount + +this.convertLaService.toLa(String(tx.fee)))
-        )
-      );
-      const newToBalance = this.convertLaService.toRei(
-        String(
-          +this.convertLaService.toLa(
-            this.store.getUserByPublicKey(to.publicKey).balance
-          ) + laAmount
-        )
-      );
+        const newSenderBalance = this.convertLaService.toRei(
+          String(
+            +this.convertLaService.toLa(
+              this.store.getUserByPublicKey(sender.publicKey).balance
+            ) -
+              (laAmount + +this.convertLaService.toLa(String(tx.fee)))
+          )
+        );
+        const newToBalance = this.convertLaService.toRei(
+          String(
+            +this.convertLaService.toLa(
+              this.store.getUserByPublicKey(to.publicKey).balance
+            ) + laAmount
+          )
+        );
 
-      this.store.updateUserBalance(sender.publicKey, newSenderBalance);
-      this.store.updateUserBalance(to.publicKey, newToBalance.toString());
+        this.store.updateUserBalance(sender.publicKey, newSenderBalance);
+        this.store.updateUserBalance(to.publicKey, newToBalance.toString());
 
-      return true;
-    } catch (e) {
-      throw e;
-    }
+        res(true);
+      } catch (e) {
+        rej(e);
+        throw e;
+      }
+    });
   }
 
   public checkTransferUsers(senderAdr: string, toAdr: string) {

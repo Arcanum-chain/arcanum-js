@@ -98,7 +98,7 @@ export class BlockTransaction {
         amount: this.amount,
       });
 
-      // this.verifySign(verifyData, this.signature, this.sender);
+      this.verifySign(verifyData, this.signature, this.sender);
 
       return {
         data: payload,
@@ -145,7 +145,8 @@ export class BlockTransaction {
       } else {
         return true;
       }
-    } catch {
+    } catch (e) {
+      console.log(e);
       throw new BlockChainError(
         BlockChainErrorCodes.INVALID_VERIFY_TRANSACTION
       );

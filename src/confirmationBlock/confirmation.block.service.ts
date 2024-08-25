@@ -1,5 +1,4 @@
 import EventEmitter from "events";
-import { promisify } from "util";
 
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
@@ -7,6 +6,7 @@ import { CoinBaseTxActions } from "../coinBaseTransaction/coinBaseTransactionAct
 import { BlockChainStore, PeersStore } from "../store";
 import { TransactionActions } from "../transaction/transactionActions";
 
+import { BlockLimits } from "../constants";
 import { EventMessage } from "../constants/events.messages";
 import { BlockChainMessage, Cron, MessageEvent } from "../utils";
 
@@ -54,7 +54,13 @@ class BlockConfirmationService extends EventEmitter {
       const latestTenBlocks = this.store.getChain().slice(-10);
 
       latestTenBlocks.forEach((block) => {
-        if (this.store.getChain()[block.index + 6] && !block.verify) {
+        if (
+          this.store.getChain()[
+            block.index + BlockLimits.DEFAULT_BLOCK_CONFIRMATIONS
+          ] &&
+          !block.verify &&
+          block.index !== 0
+        ) {
           this.emit(EventMessage.CONFIRMED_VERIFY_BLOCK, block.hash);
           this.store.setVerifyBlockByHash(block.hash);
           this.transferCoinBaseTx(block.data.coinBase as CoinBaseTx);
@@ -70,13 +76,20 @@ class BlockConfirmationService extends EventEmitter {
     const allVerCountBlock: number = this.confirmedBlocks[hash].count; // 100
     const peersLength: number = this.peersStore.getActiveNodes().length; // 1000
 
-    if (peersLength === 0) {
+    if (peersLength === (1 || 0)) {
+      this.store.setNewBlockToChain(hash);
+      this.verifyBlock();
+
+      delete this.confirmedBlocks[hash];
+
       return 0;
     }
 
     const percentage = +((allVerCountBlock / peersLength) * 100).toFixed(2);
 
-    if (percentage >= 51) {
+    console.log(percentage, peersLength);
+
+    if (percentage >= 51 || (percentage >= 50 && peersLength === 2)) {
       this.verifyBlock();
 
       delete this.confirmedBlocks[hash];
@@ -103,15 +116,18 @@ class BlockConfirmationService extends EventEmitter {
   }
 
   private async transfer(txs: Transaction[]) {
-    const transferAsync = promisify(this.txActions.transfer);
-
-    await Promise.all(txs.map(async (tx) => await transferAsync(tx)));
+    try {
+      await Promise.all(
+        txs.map(async (tx) => await this.txActions.transfer(tx))
+      );
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   private transferCoinBaseTx(tx: CoinBaseTx): void {
     const service = new CoinBaseTxActions(tx);
     service.setDistributing();
-    service.transferCoinBase();
   }
 
   private subscribe() {

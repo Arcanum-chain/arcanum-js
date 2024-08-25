@@ -12,6 +12,7 @@ export class Block {
   public hash: string = "";
   public data: IBlockData;
   public verify: boolean = false;
+  public totalFeeRei: number = 0;
 
   constructor({
     index,

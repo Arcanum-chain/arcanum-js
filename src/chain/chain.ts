@@ -1,8 +1,9 @@
 import WebSocket from "ws";
 
-import { BlockChainStore } from "../store";
+import { BlockChainStore, PeersStore } from "../store";
 
 import { Block } from "../block/block";
+import { BlockConfirmationService } from "../confirmationBlock";
 import { MiningBlock } from "../mining/mining";
 import { BlockTransaction } from "../transaction/transaction";
 import { BlockChainUser } from "../user/user";
@@ -22,6 +23,9 @@ export class BlockChain {
   private blockChainUser: BlockChainUser;
   private verifyBlockService: VerifyBlockService;
   private readonly store: typeof BlockChainStore = BlockChainStore;
+  private readonly peersStore: typeof PeersStore = PeersStore;
+  private readonly blockConfirmations: typeof BlockConfirmationService =
+    BlockConfirmationService;
 
   constructor() {
     this.chain = IS_MAIN_NODE ? [] : [];
@@ -52,8 +56,7 @@ export class BlockChain {
 
     block.verify = true;
 
-    this.store.setNewBlockToChain(block);
-    this.chain.push(block);
+    this.store.chain[block.hash] = block;
 
     return block;
   }
@@ -98,19 +101,38 @@ export class BlockChain {
 
     const newBlock = new Block(payload);
 
-    new MiningBlock(minerAddress).mineBlock(newBlock);
+    if (
+      Object.values(this.peersStore.getAllNodes).length === 1 &&
+      Object.values(this.peersStore.getActiveNodes()).length === (1 || 0)
+    ) {
+      new MiningBlock(minerAddress).mineBlock(newBlock);
 
-    this.chain.push(newBlock);
-    this.store.setNewBlockToChain(newBlock);
+      this.store.newCreatedBlock(newBlock);
+      this.blockConfirmations.confirmBlock(newBlock.hash);
 
-    const isValidChain = this.isValidChain(this.chain);
+      const isValidChain = this.isValidChain(this.chain);
 
-    // this.broadcastBlock(newBlock);
+      // this.broadcastBlock(newBlock);
 
-    if (isValidChain) {
-      return newBlock;
-    } else if (!isValidChain) {
-      throw new Error("Not valid chain!!!!");
+      if (isValidChain) {
+        return newBlock;
+      } else if (!isValidChain) {
+        throw new Error("Not valid chain!!!!");
+      }
+    }
+
+    if (this.store.getPendingBlocks().length == 0) {
+      new MiningBlock(minerAddress).mineBlock(newBlock);
+
+      this.store.newCreatedBlock(newBlock);
+
+      const isValidChain = this.isValidChain(this.chain);
+
+      if (isValidChain) {
+        return newBlock;
+      } else if (!isValidChain) {
+        throw new Error("Not valid chain!!!!");
+      }
     }
   }
 
