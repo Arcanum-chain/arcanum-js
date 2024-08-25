@@ -5,19 +5,18 @@ import { PORT } from "./constants/peers.constanrs";
 import { AutoScheduleService } from "./auto-schedule/auto-shedule.service";
 import { BlockChain } from "./chain/chain";
 import { ChocolateJo } from "./chocolateJo/chocolateJo";
-import { DumpingService } from "./dumping/dumping";
 import { MemPool } from "./memPool/memPool";
 import { N2NProtocol } from "./n2nProtocol/n2n.protocol";
 
 const blockChain = new BlockChain();
-const dump = new DumpingService();
 const protocol = new N2NProtocol(
   Number(process.env.WS_PORT),
   process.env.WS_NODE_URL as string,
   "0xewfkfmfew",
   { isMainNode: JSON.parse(process.env.IS_MAIN_NODE as string) }
 );
-const chocolateJo = new ChocolateJo(protocol);
+
+new ChocolateJo(protocol);
 new AutoScheduleService();
 MemPool.getInstance();
 
@@ -86,32 +85,6 @@ app.post("/trans/", (req, res) => {
   }
 });
 
-// WebSocket-сервер для связи с другими узлами
-// const wss = new WebSocket.Server({ port: WS_PORT });
-
-// wss.on("connection", (ws) => {
-//   console.log("Новый узел подключен");
-
-//   ws.on("message", (message: string) => {
-//     const data = JSON.parse(message);
-//     switch (data.type) {
-//       case "block":
-//         if (blockChain.isValidChain(blockChain.chain.concat(data.data))) {
-//           blockChain.replaceChain(blockChain.chain.concat(data.data));
-//         }
-//         break;
-//       case "user":
-//         blockChain.addNewUserToChain(data.data);
-//         break;
-//     }
-//   });
-
-//   ws.on("close", () => {
-//     console.log("Узел отключен");
-//   });
-// });
-
-// Запускаем сервер
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
 });

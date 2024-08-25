@@ -1,9 +1,11 @@
+import { GasBlockChain } from "../constants/gas.constants";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 import { BlockChainStore, MetadataBlockchainStore } from "../store";
-import { MerkleTree, VerifyBlockService } from "../utils";
+import { ConvertToLaService, MerkleTree, VerifyBlockService } from "../utils";
 
 import type { Transaction } from "@/transaction/transaction.interface";
 import type { IBlock } from "../block/block.interface";
+import type { User } from "../user/user.interface";
 
 export class SecurityAssistent {
   private readonly store: typeof BlockChainStore = BlockChainStore;
@@ -11,10 +13,12 @@ export class SecurityAssistent {
     MetadataBlockchainStore;
   private readonly verifyBlockService: VerifyBlockService;
   private readonly merkleTreeService: MerkleTree;
+  private readonly convertService: ConvertToLaService;
 
   constructor() {
     this.verifyBlockService = new VerifyBlockService();
     this.merkleTreeService = new MerkleTree();
+    this.convertService = new ConvertToLaService();
   }
 
   private verifyAllTxsInBlock(
@@ -94,6 +98,72 @@ export class SecurityAssistent {
       }
 
       return true;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  public verifyNewTxInMemPoolFromOtherNode(tx: Transaction) {
+    try {
+      this.verifyBlockService.isHashValid(tx.hash);
+
+      const currentTime = Date.now();
+      const fourtyMinutesAgo = currentTime - 40 * 60 * 1000;
+
+      if (tx.data.timestamp < fourtyMinutesAgo) {
+        throw new Error();
+      }
+
+      if (+this.convertService.toLa(String(tx.fee)) < GasBlockChain.MIN_GAS) {
+        throw new Error();
+      }
+
+      this.checkUsersInNewTx(tx);
+
+      const isDubleTx = this.store
+        .getAllTransactionsFromMemPull()
+        .filter((trans) => {
+          return tx.hash === trans.hash;
+        });
+
+      if (isDubleTx) {
+        throw new BlockChainError(BlockChainErrorCodes.DUPLICATE_DATA);
+      }
+
+      return true;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  public verifyNewUserFromNode(user: User) {
+    try {
+      const emptyUser = this.store.users[user.publicKey];
+
+      if (emptyUser) {
+        throw new BlockChainError(BlockChainErrorCodes.DUPLICATE_DATA);
+      }
+
+      return true;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  private checkUsersInNewTx(tx: Transaction) {
+    try {
+      const sender = tx.data.sender;
+      const to = tx.data.to;
+      const amount = tx.data.amount;
+
+      const senderFromChain = this.store.getUserByPublicKey(sender);
+      this.store.getUserByPublicKey(to);
+
+      if (+senderFromChain.balance - tx.fee < amount) {
+        throw new BlockChainError(
+          BlockChainErrorCodes.INVALID_TRANSACTIONS_DATA_BY_NODE
+        );
+      }
     } catch (e) {
       throw e;
     }

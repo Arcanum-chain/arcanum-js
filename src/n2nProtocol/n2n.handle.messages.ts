@@ -1,9 +1,12 @@
 import { BlockConfirmationService } from "../confirmationBlock";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
+import { MemPool } from "../memPool/memPool";
 import { SecurityAssistent } from "../security-assistent/security-assistent";
 import { BlockChainStore, MetadataBlockchainStore, PeersStore } from "../store";
 
 import type { IBlock } from "@/block/block.interface";
+import type { Transaction } from "../transaction/transaction.interface";
+import type { User } from "../user/user.interface";
 import { MessageTypes } from "./constants/message.types";
 import type { ResponseConfirmVerifyNodeBlockDto } from "./dto/res-confirm-verify-block.dto";
 import type { N2NRequest } from "./interfaces/req.interface";
@@ -17,12 +20,14 @@ export class N2NHandleMessagesService {
     MetadataBlockchainStore;
   private readonly confirmationBlockService: typeof BlockConfirmationService =
     BlockConfirmationService;
+  private readonly memPoolService: MemPool;
 
   constructor(
     private readonly nodeId: string,
     private readonly isMainNode: boolean
   ) {
     this.securityAssistentService = new SecurityAssistent();
+    this.memPoolService = MemPool.getInstance();
   }
 
   public getMainNode(msg: N2NRequest) {
@@ -129,7 +134,29 @@ export class N2NHandleMessagesService {
         this.confirmationBlockService.confirmBlock(hash);
       }
     } catch (e) {
-      console.log("N2N HANDLE MSG:", e);
+      throw e;
+    }
+  }
+
+  public addNewTxFromNode(msg: N2NResponse<Transaction>) {
+    try {
+      this.securityAssistentService.verifyNewTxInMemPoolFromOtherNode(
+        msg.payload.data
+      );
+      this.memPoolService.addNewTxFromOtherNode(msg.payload.data);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  public addNewUserFromNode(msg: N2NResponse<User>) {
+    try {
+      const user = msg.payload.data;
+
+      this.securityAssistentService.verifyNewUserFromNode(user);
+      this.blockChainStore.setNewUserFromOtherNode(user);
+    } catch (e) {
+      throw e;
     }
   }
 

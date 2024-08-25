@@ -54,6 +54,15 @@ export class MemPool extends Singleton {
     }
   }
 
+  public addNewTxFromOtherNode(tx: Transaction) {
+    try {
+      this.store.setNewTxFromOtherNode(tx);
+      this.sortedTransactionFromMemPool();
+    } catch (e) {
+      throw e;
+    }
+  }
+
   private rollbackInValidTxFromMemPool(txHash: string) {
     try {
       this.memPoolLength -= 1;

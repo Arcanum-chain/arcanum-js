@@ -7,10 +7,10 @@ import { DumpingService } from "../dumping/dumping";
 import { Node2NodeAdapter } from "../node-adapter/node-adapter";
 import { RecoverService } from "../recover/recover.service";
 import { PeersStore } from "../store";
+import { N2NController } from "./n2n.controller";
 import { N2NHandleMessagesService } from "./n2n.handle.messages";
 import { SerializeProtocolData } from "./serialize.data";
 
-import type { IBlock } from "@/block/block.interface";
 import { MessageTypes } from "./constants/message.types";
 import type { N2NProtocolConstructorInterface } from "./interfaces/constructor.interface";
 import type { N2NNode } from "./interfaces/node.interface";
@@ -297,46 +297,7 @@ export class N2NProtocol {
 
   private handleMessage(msg: N2NRequest | N2NResponse<any>, ws: WebSocket) {
     try {
-      switch (msg.message) {
-        case MessageTypes.GET_MAIN_NODE:
-          const sendMsg = this.handleMsgService.getMainNode(msg as N2NRequest);
-
-          this.sendResMessage(sendMsg, ws)
-            .then()
-            .catch((e) => console.log(e));
-
-          break;
-        case MessageTypes.CONNECT_NODE:
-          this.store.addActiveNode(
-            (msg as N2NRequest).payload.nodeId,
-            (msg as N2NRequest).payload.publicKey as string
-          );
-
-          break;
-        case MessageTypes.BLOCK:
-          if (this.nodeId !== (msg as N2NResponse<any>).payload.senderNodeId) {
-            const sendMsgVerifyBlock =
-              this.handleMsgService.addNewBlockFromNode(
-                msg as N2NResponse<IBlock>
-              );
-
-            console.log("Send");
-
-            this.sendResMessage(sendMsgVerifyBlock, ws)
-              .then((res) => console.log("Response:", res))
-              .catch((e) => console.log(e));
-          }
-
-          break;
-        case MessageTypes.NODES_VERIFY_BLOCK:
-          console.log("Verify");
-
-          this.handleMsgService.verifyBlockResFromOtherNode(
-            msg as N2NResponse<any>
-          );
-
-          break;
-      }
+      new N2NController(msg, ws, this.nodeId);
     } catch (e) {
       throw e;
     }

@@ -32,7 +32,7 @@ class PeersStore extends EventEmitter {
 
       return true;
     } catch (e) {
-      throw e;
+      console.log(e);
     }
   }
 

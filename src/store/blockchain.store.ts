@@ -248,6 +248,28 @@ class BlockChainStore extends EventEmitter {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
   }
+
+  public setNewTxFromOtherNode(tx: Transaction) {
+    try {
+      const empty = this.memPullTransactions[tx.hash];
+
+      if (empty) {
+        throw new BlockChainError(BlockChainErrorCodes.DUPLICATE_DATA);
+      }
+
+      this.memPullTransactions[tx.hash] = tx;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  public setNewUserFromOtherNode(user: User) {
+    try {
+      this.users[user.publicKey] = user;
+    } catch (e) {
+      throw e;
+    }
+  }
 }
 
 export default new BlockChainStore();

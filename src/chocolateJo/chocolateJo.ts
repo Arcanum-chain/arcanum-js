@@ -5,6 +5,7 @@ import { MessageTypes } from "../n2nProtocol/constants/message.types";
 import { N2NProtocol } from "../n2nProtocol/n2n.protocol";
 
 import type { IBlock } from "../block/block.interface";
+import type { Transaction } from "../transaction/transaction.interface";
 import type { User } from "../user/user.interface";
 import type { MessageEvent } from "../utils";
 
@@ -37,7 +38,21 @@ export class ChocolateJo {
 
       this.protocol.sendMsgAllToNodes<User>(
         user.msg as User,
-        MessageTypes.BLOCK
+        MessageTypes.USER
+      );
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  @BlockChainMessage(EventMessage.TRANSACTION_ADD_IN_MEMPOOL)
+  private broadcastTxInMemPool(msg?: MessageEvent<Transaction>) {
+    try {
+      if (!msg?.msg) return;
+
+      this.protocol.sendMsgAllToNodes<Transaction>(
+        msg.msg,
+        MessageTypes.TRANSACTION
       );
     } catch (e) {
       throw e;
@@ -48,6 +63,7 @@ export class ChocolateJo {
     try {
       this.broadcastNewBlock();
       this.broadcastNewUser();
+      this.broadcastTxInMemPool();
     } catch (e) {
       console.log(e);
       throw e;

@@ -3,6 +3,7 @@ import EventEmitter from "events";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
 import { CoinBaseTxActions } from "../coinBaseTransaction/coinBaseTransactionActions";
+import { DumpingService } from "../dumping/dumping";
 import { BlockChainStore, PeersStore } from "../store";
 import { TransactionActions } from "../transaction/transactionActions";
 
@@ -22,11 +23,13 @@ class BlockConfirmationService extends EventEmitter {
   private readonly peersStore: typeof PeersStore = PeersStore;
   private readonly txActions: TransactionActions;
   private readonly store: typeof BlockChainStore = BlockChainStore;
+  private readonly dumpingService: DumpingService;
 
   constructor() {
     super();
 
     this.txActions = new TransactionActions();
+    this.dumpingService = new DumpingService();
     this.subscribe();
   }
 
@@ -65,6 +68,7 @@ class BlockConfirmationService extends EventEmitter {
           this.store.setVerifyBlockByHash(block.hash);
           this.transferCoinBaseTx(block.data.coinBase as CoinBaseTx);
           this.transfer(Object.values(block.data.transactions));
+          this.dumpingService.dumpingNewBlock(block);
         }
       });
     } catch (e) {
@@ -87,9 +91,8 @@ class BlockConfirmationService extends EventEmitter {
 
     const percentage = +((allVerCountBlock / peersLength) * 100).toFixed(2);
 
-    console.log(percentage, peersLength);
-
     if (percentage >= 51 || (percentage >= 50 && peersLength === 2)) {
+      this.store.setNewBlockToChain(hash);
       this.verifyBlock();
 
       delete this.confirmedBlocks[hash];
