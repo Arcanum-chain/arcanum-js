@@ -52,15 +52,14 @@ class BlockConfirmationService extends EventEmitter {
     this.emit(EventMessage.NEW_PENDING_BLOCK, block);
   }
 
-  private verifyBlock() {
+  private async verifyBlock() {
     try {
-      const latestTenBlocks = this.store.getChain().slice(-10);
+      const chain = await this.store.getChain();
+      const latestTenBlocks = chain.slice(-10);
 
       latestTenBlocks.forEach((block) => {
         if (
-          this.store.getChain()[
-            block.index + BlockLimits.DEFAULT_BLOCK_CONFIRMATIONS
-          ] &&
+          chain[block.index + BlockLimits.DEFAULT_BLOCK_CONFIRMATIONS] &&
           !block.verify &&
           block.index !== 0
         ) {

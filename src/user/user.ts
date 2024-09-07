@@ -1,5 +1,6 @@
 import { BlockChainStore } from "../store";
 
+import { BlockChainError, BlockChainErrorCodes } from "../errors";
 import { ConvertToLaService } from "../utils/convert.la.service.util";
 import { KeyService } from "../utils/keys.service.util";
 
@@ -23,8 +24,9 @@ export class BlockChainUser {
     try {
       const { privateKey, publicKey } =
         await this.generatePublicAndPrivateKey();
+      const userAddress = await this.keyService.generateUserAddress(publicKey);
 
-      const isOk = this.checkIsEmptyAddress(publicKey);
+      const isOk = this.checkIsEmptyAddress(userAddress);
 
       if (isOk) {
         const newUser: User = {
@@ -32,6 +34,7 @@ export class BlockChainUser {
           balance: JSON.parse(process.env.IS_THE_TEST_NODE as string)
             ? "100"
             : "0",
+          address: userAddress,
         };
 
         this.store.setNewUser(newUser);
@@ -45,12 +48,12 @@ export class BlockChainUser {
     }
   }
 
-  private checkIsEmptyAddress(publicKey: string): boolean {
+  private checkIsEmptyAddress(address: string): boolean {
     try {
-      const user = this.users[publicKey];
+      const userByAddress = this.store.getOriginalUserObject()[address];
 
-      if (user) {
-        throw new Error("Такой юзер уже существует");
+      if (userByAddress) {
+        throw new BlockChainError(BlockChainErrorCodes.DUPLICATE_DATA);
       }
 
       return true;

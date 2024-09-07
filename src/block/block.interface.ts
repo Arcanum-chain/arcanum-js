@@ -15,4 +15,5 @@ export interface IBlock {
   readonly data: IBlockData;
   verify: boolean;
   readonly totalFeeRei?: number;
+  nonce: number;
 }

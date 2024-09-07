@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { VerifyBlockService } from "../utils";
 
 import { DEFAULT_HASH_PREFIX } from "../constants/default.hash.prefix";
 
@@ -13,6 +13,9 @@ export class Block {
   public data: IBlockData;
   public verify: boolean = false;
   public totalFeeRei: number = 0;
+  public nonce: number = 0;
+
+  private readonly hashService: VerifyBlockService;
 
   constructor({
     index,
@@ -20,6 +23,8 @@ export class Block {
     data,
     prevBlockHash = "",
   }: BlockConstructor) {
+    this.hashService = new VerifyBlockService();
+
     this.index = index;
     this.timestamp = timestamp;
     this.prevBlockHash = prevBlockHash;
@@ -35,9 +40,11 @@ export class Block {
       data: JSON.stringify(this.data),
     });
 
-    const hash = `${DEFAULT_HASH_PREFIX}${createHash("sha256")
-      .update(payload)
-      .digest("hex")}`;
+    // const hash = `${DEFAULT_HASH_PREFIX}${createHash("sha256")
+    //   .update(payload)
+    //   .digest("hex")}`;
+
+    const hash = `${DEFAULT_HASH_PREFIX}${this.hashService.genHash(payload)}`;
 
     this.hash = hash;
 

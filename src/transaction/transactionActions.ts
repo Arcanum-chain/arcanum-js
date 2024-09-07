@@ -30,7 +30,7 @@ export class TransactionActions {
         const newSenderBalance = this.convertLaService.toRei(
           String(
             +this.convertLaService.toLa(
-              this.store.getUserByPublicKey(sender.publicKey).balance
+              this.store.getUserByAddress(sender.address).balance
             ) -
               (laAmount + +this.convertLaService.toLa(String(tx.fee)))
           )
@@ -38,7 +38,7 @@ export class TransactionActions {
         const newToBalance = this.convertLaService.toRei(
           String(
             +this.convertLaService.toLa(
-              this.store.getUserByPublicKey(to.publicKey).balance
+              this.store.getUserByAddress(to.address).balance
             ) + laAmount
           )
         );
@@ -56,11 +56,11 @@ export class TransactionActions {
 
   public checkTransferUsers(senderAdr: string, toAdr: string) {
     try {
-      const sender = this.store.getUserByPublicKey(senderAdr);
+      const sender = this.store.getUserByAddress(senderAdr);
 
       this.require(sender !== undefined, "Sender not found");
 
-      const to = this.store.getUserByPublicKey(toAdr);
+      const to = this.store.getUserByAddress(toAdr);
 
       this.require(to !== undefined, "Participient not found");
 

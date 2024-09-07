@@ -1,5 +1,7 @@
 import EventEmitter from "events";
 
+import { DataSource } from "../database/datasource.service";
+
 import { EventMessage } from "../constants";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
@@ -9,13 +11,31 @@ import type { User } from "../user/user.interface";
 
 class BlockChainStore extends EventEmitter {
   public chain: Record<IBlock["hash"], IBlock> = {};
-  public users: Record<User["publicKey"], User> = {};
+  public users: Record<User["address"], User> = {};
   public memPullTransactions: Record<Transaction["hash"], Transaction> = {};
   public pendingBlocks: IBlock[] = [];
+  private readonly db: DataSource;
 
-  public getChain(): IBlock[] {
+  constructor() {
+    super();
+
+    this.db = DataSource.getInstance();
+  }
+
+  public async addGenesisBlock(genesisBlock: IBlock) {
     try {
-      return Object.values(this.chain);
+      await this.db.blocks.create({
+        key: genesisBlock.hash,
+        data: genesisBlock,
+      });
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  public async getChain(): Promise<IBlock[]> {
+    try {
+      return await this.db.blocks.findMany();
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
@@ -46,7 +66,7 @@ class BlockChainStore extends EventEmitter {
       this.users = {};
 
       for (const user of users) {
-        this.users[user.publicKey] = user;
+        this.users[user.address] = user;
       }
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
@@ -66,17 +86,13 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public getBlockByHash(blockHash: string): IBlock {
+  public async getBlockByHash(blockHash: string): Promise<IBlock> {
     try {
-      const block = this.chain[blockHash];
+      const block = await this.db.blocks.findOne(blockHash);
 
-      if (block) {
-        return block;
-      }
-
-      throw new BlockChainError(BlockChainErrorCodes.DOESNT_NOT_BLOCK_BY_HASH);
+      return block;
     } catch (e) {
-      throw e;
+      throw new BlockChainError(BlockChainErrorCodes.DOESNT_NOT_BLOCK_BY_HASH);
     }
   }
 
@@ -89,20 +105,20 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public setNewBlockToChain(newBlockHash: string): boolean {
+  public async setNewBlockToChain(newBlockHash: string): Promise<boolean> {
     try {
       const block = this.pendingBlocks.filter(
         ({ hash }) => hash === newBlockHash
       )[0];
 
-      console.log(block);
-
       if (!block) {
         throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
       }
 
-      this.chain[block.hash] = block;
+      const key = block.hash;
       this.pendingBlocks = [];
+
+      await this.db.blocks.create({ key, data: block });
 
       return true;
     } catch (e) {
@@ -110,9 +126,9 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public setNewBlockToChainFromOtherNode(block: IBlock) {
+  public async setNewBlockToChainFromOtherNode(block: IBlock) {
     try {
-      this.chain[block.hash] = block;
+      await this.db.blocks.create({ key: block.hash, data: block });
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }
@@ -120,11 +136,11 @@ class BlockChainStore extends EventEmitter {
 
   public setNewUser(newUser: User): boolean {
     try {
-      if (this.users[newUser.publicKey]) {
+      if (this.users[newUser.address]) {
         throw new Error();
       }
 
-      this.users[newUser.publicKey] = newUser;
+      this.users[newUser.address] = newUser;
       this.emit(EventMessage.USER_ADDED, newUser);
 
       return true;
@@ -135,16 +151,24 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public getUserByPublicKey(publicKey: string): User {
+  public getUserByAddress(address: string): User {
     try {
-      const user = this.users[publicKey];
+      const user = this.users[address];
 
       if (!user) {
         throw new Error();
       }
 
       return user;
-    } catch {
+    } catch (e) {
+      throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+    }
+  }
+
+  public getOriginalUserObject() {
+    try {
+      return this.users;
+    } catch (e) {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
   }
@@ -233,9 +257,9 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public setVerifyBlockByHash(hash: string): IBlock {
+  public async setVerifyBlockByHash(hash: string): Promise<IBlock> {
     try {
-      const block = this.getBlockByHash(hash);
+      const block = await this.getBlockByHash(hash);
 
       if (block.verify === true) {
         throw new Error();
@@ -265,7 +289,7 @@ class BlockChainStore extends EventEmitter {
 
   public setNewUserFromOtherNode(user: User) {
     try {
-      this.users[user.publicKey] = user;
+      this.users[user.address] = user;
     } catch (e) {
       throw e;
     }

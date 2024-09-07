@@ -32,11 +32,11 @@ export class N2NController {
     this.control();
   }
 
-  private control() {
+  private async control() {
     try {
       switch (this.msg.message) {
         case MessageTypes.GET_MAIN_NODE:
-          const sendMsg = this.handleMsgService.getMainNode(
+          const sendMsg = await this.handleMsgService.getMainNode(
             this.msg as N2NRequest
           );
 

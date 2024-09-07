@@ -1,90 +1,109 @@
-import express from "express";
+// import cors from "cors";
+// import express from "express";
 
-import { PORT } from "./constants/peers.constanrs";
+// import { PORT } from "./constants/peers.constanrs";
 
-import { AutoScheduleService } from "./auto-schedule/auto-shedule.service";
-import { BlockChain } from "./chain/chain";
-import { ChocolateJo } from "./chocolateJo/chocolateJo";
-import { MemPool } from "./memPool/memPool";
-import { N2NProtocol } from "./n2nProtocol/n2n.protocol";
+// import { AutoScheduleService } from "./auto-schedule/auto-shedule.service";
+// import { BlockChain } from "./chain/chain";
+// import { ChocolateJo } from "./chocolateJo/chocolateJo";
+// import { MemPool } from "./memPool/memPool";
+// import { N2NProtocol } from "./n2nProtocol/n2n.protocol";
 
-const blockChain = new BlockChain();
-const protocol = new N2NProtocol(
-  Number(process.env.WS_PORT),
-  process.env.WS_NODE_URL as string,
-  "0xewfkfmfew",
-  { isMainNode: JSON.parse(process.env.IS_MAIN_NODE as string) }
-);
+import { NodeStarter } from "./starter/starter.module";
 
-new ChocolateJo(protocol);
-new AutoScheduleService();
-MemPool.getInstance();
+const starter = new NodeStarter();
 
-if (JSON.parse(process.env.IS_MAIN_NODE as string)) {
-  blockChain.createGenesisBlock();
+async function start() {
+  try {
+    await starter.start();
+  } catch (e) {
+    console.log(`[NODE]: ${(e as Error).message}`);
+  }
 }
 
-protocol.createServer();
+start();
 
-const app = express();
-app.use(express.json());
+// const blockChain = new BlockChain();
+// const protocol = new N2NProtocol(
+//   Number(process.env.WS_PORT),
+//   process.env.WS_NODE_URL as string,
+//   "0xewfkfmfew",
+//   { isMainNode: JSON.parse(process.env.IS_MAIN_NODE as string) }
+// );
 
-app.get("/chain", (req, res) => {
-  try {
-    res.json(blockChain.getChain());
-  } catch (e) {
-    res.json(e);
-  }
-});
+// new ChocolateJo(protocol);
+// new AutoScheduleService();
+// MemPool.getInstance();
 
-app.post("/mine", (req, res) => {
-  try {
-    blockChain.mineBlock(req.body.key);
-    res.send("Блок добыт");
-  } catch (e) {
-    console.log(e);
-    res.status(400).send(e);
-  }
-});
+// if (JSON.parse(process.env.IS_MAIN_NODE as string)) {
+//   blockChain.createGenesisBlock();
+// }
 
-app.get("/trans", (req, res) => {
-  try {
-    const result = blockChain.getTxs();
+// protocol.createServer();
 
-    res.json(result);
-  } catch (e) {
-    console.log(e);
-    res.status(400).send("Fail");
-  }
-});
+// const app = express();
+// app.use(express.json());
+// app.use(cors({ origin: "*" }));
 
-app.post("/user", async (req, res) => {
-  try {
-    const data = await blockChain.createNewUser();
+// app.get("/chain", async (req, res) => {
+//   try {
+//     const data = await blockChain.getChain();
 
-    res.send(data);
-  } catch (e) {
-    res.status(500).send(e);
-  }
-});
+//     res.json(data);
+//   } catch (e) {
+//     res.json(e);
+//   }
+// });
 
-app.get("/user", (req, res) => {
-  res.send(blockChain.getAllUsers());
-});
+// app.post("/mine", async (req, res) => {
+//   try {
+//     await blockChain.mineBlock(req.body.key);
+//     res.send("Блок добыт");
+//   } catch (e) {
+//     console.log(e);
+//     res.status(400).send(e);
+//   }
+// });
 
-app.post("/trans/", (req, res) => {
-  try {
-    const body = req.body;
+// app.get("/trans", (req, res) => {
+//   try {
+//     const result = blockChain.getTxs();
 
-    const result = blockChain.createTransaction(body);
+//     res.json(result);
+//   } catch (e) {
+//     console.log(e);
+//     res.status(400).send("Fail");
+//   }
+// });
 
-    res.send(result);
-  } catch (e) {
-    console.log(e);
-    res.status(500).send((e as Error).message);
-  }
-});
+// app.post("/user", async (req, res) => {
+//   try {
+//     const data = await blockChain.createNewUser();
 
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-});
+//     res.send(data);
+//   } catch (e) {
+//     console.log(e);
+//     res.status(500).json((e as Error).message);
+//   }
+// });
+
+// app.get("/user", (req, res) => {
+//   res.send(blockChain.getAllUsers());
+// });
+
+// app.post("/trans/", (req, res) => {
+//   try {
+//     const body = req.body;
+
+//     const result = blockChain.createTransaction(body);
+
+//     res.send(result);
+//   } catch (e) {
+//     console.log(e);
+//     res.status(500).send((e as Error).message);
+//   }
+// });
+
+// app.listen(PORT, () => {
+//   console.log(`Сервер запущен на порту ${PORT}`);
+// });

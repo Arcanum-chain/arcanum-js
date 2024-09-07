@@ -25,7 +25,7 @@ export class CoinBaseTxActions {
 
   private transferCoinBase(): boolean {
     try {
-      const miner = this.store.getUserByPublicKey(this.coinBaseTx.minerAddress);
+      const miner = this.store.getUserByAddress(this.coinBaseTx.minerAddress);
 
       const oldMinerBalanceToLa = +this.convertService.toLa(miner.balance);
       const newMinerBalance = this.convertService.toRei(
@@ -47,9 +47,7 @@ export class CoinBaseTxActions {
   public rollbackTx(): boolean {
     try {
       if (this.coinBaseTx.isDistributed) {
-        const miner = this.store.getUserByPublicKey(
-          this.coinBaseTx.minerAddress
-        );
+        const miner = this.store.getUserByAddress(this.coinBaseTx.minerAddress);
 
         const rollbackBalance = this.convertService.toRei(
           String(

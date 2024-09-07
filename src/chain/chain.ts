@@ -1,7 +1,6 @@
-import WebSocket from "ws";
-
 import { BlockChainStore, PeersStore } from "../store";
 
+import { Singleton } from "../basic";
 import { Block } from "../block/block";
 import { BlockConfirmationService } from "../confirmationBlock";
 import { MiningBlock } from "../mining/mining";
@@ -16,7 +15,7 @@ import type { BlockConstructor } from "../block/block.interface";
 import type { Transaction } from "../transaction/transaction.interface";
 import type { User } from "../user/user.interface";
 
-export class BlockChain {
+export class BlockChain extends Singleton {
   public chain: Block[] = [];
   private readonly peers: string[];
   private users: Record<User["publicKey"], User> = {};
@@ -28,9 +27,10 @@ export class BlockChain {
     BlockConfirmationService;
 
   constructor() {
+    super();
+
     this.chain = IS_MAIN_NODE ? [] : [];
     this.peers = PEERS;
-    this.broadcastBlock = this.broadcastBlock.bind(this);
     this.users = {};
     this.blockChainUser = new BlockChainUser(this.users);
     this.verifyBlockService = new VerifyBlockService();
@@ -56,7 +56,7 @@ export class BlockChain {
 
     block.verify = true;
 
-    this.store.chain[block.hash] = block;
+    this.store.addGenesisBlock(block);
 
     return block;
   }
@@ -69,12 +69,14 @@ export class BlockChain {
     }
   }
 
-  public getLatestBlock() {
-    return this.store.getChain()[this.store.getChain().length - 1];
+  public async getLatestBlock() {
+    const chain = await this.store.getChain();
+
+    return chain[chain.length - 1];
   }
 
-  public getBlockByHash(blockHash: string) {
-    return this.chain[0];
+  public async getBlockByHash(blockHash: string) {
+    return await this.store.getBlockByHash(blockHash);
   }
 
   public isValidChain(chain: Block[]) {
@@ -89,14 +91,16 @@ export class BlockChain {
     return true;
   }
 
-  public mineBlock(minerAddress: string) {
+  public async mineBlock(minerAddress: string) {
+    const lastBlock = await this.getLatestBlock();
+
     const payload: BlockConstructor = {
-      index: this.getLatestBlock()?.index + 1,
+      index: lastBlock?.index + 1,
       timestamp: Date.now(),
       data: {
         transactions: {},
       },
-      prevBlockHash: this.getLatestBlock()?.hash ?? "",
+      prevBlockHash: lastBlock?.hash ?? "",
     };
 
     const newBlock = new Block(payload);
@@ -105,14 +109,12 @@ export class BlockChain {
       Object.values(this.peersStore.getAllNodes).length === 1 &&
       Object.values(this.peersStore.getActiveNodes()).length === (1 || 0)
     ) {
-      new MiningBlock(minerAddress).mineBlock(newBlock);
+      await new MiningBlock(minerAddress).mineBlock(newBlock);
 
       this.store.newCreatedBlock(newBlock);
       this.blockConfirmations.confirmBlock(newBlock.hash);
 
       const isValidChain = this.isValidChain(this.chain);
-
-      // this.broadcastBlock(newBlock);
 
       if (isValidChain) {
         return newBlock;
@@ -145,34 +147,6 @@ export class BlockChain {
     }
   }
 
-  public broadcastBlock(block: Block) {
-    const peers = this.peers ?? PEERS;
-
-    peers.forEach((peer) => {
-      const ws = new WebSocket(peer);
-
-      ws.on("open", () => {
-        ws.send(JSON.stringify({ type: "block", data: block }));
-      });
-    });
-  }
-
-  public broadcastUser(user: User) {
-    try {
-      const peers = this.peers ?? PEERS;
-
-      peers.forEach((peer) => {
-        const ws = new WebSocket(peer);
-
-        ws.on("open", () => {
-          ws.send(JSON.stringify({ type: "user", data: user }));
-        });
-      });
-    } catch (e) {
-      throw e;
-    }
-  }
-
   public getTxs(): Transaction[] {
     try {
       return this.store.getAllTransactionsFromMemPull();
@@ -181,7 +155,7 @@ export class BlockChain {
     }
   }
 
-  public createTransaction({
+  public async createTransaction({
     sender,
     to,
     amount,
@@ -193,13 +167,15 @@ export class BlockChain {
     signature: string;
   }) {
     try {
+      const chain = await this.store.getChain();
+
       const transaction = new BlockTransaction({
         sender,
         amount,
         timestamp: Date.now(),
         to,
         indexBlock: 0,
-        blockHash: this.store.getChain()[this.store.getChain().length - 1].hash,
+        blockHash: chain[chain.length - 1].hash,
         users: this.users,
         signature,
       }).createTransaction();

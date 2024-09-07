@@ -21,7 +21,7 @@ export class AutoScheduleService extends Singleton {
   @Cron("0 0 * * *")
   public async autoDumpBlockchain() {
     try {
-      const chain = this.blockChainStore.getChain();
+      const chain = await this.blockChainStore.getChain();
       await this.dumpingService.dumpingBlockchain(chain);
     } catch (e) {
       console.log("Dumping blockchain error:", e);
@@ -29,9 +29,9 @@ export class AutoScheduleService extends Singleton {
   }
 
   @Cron("0 */45 * * * *")
-  public checkIsValidChain() {
+  public async checkIsValidChain() {
     try {
-      const chain = this.blockChainStore.getChain();
+      const chain = await this.blockChainStore.getChain();
       const isValidChain = this.securityAssistentService.verifyAllChain(chain);
 
       if (isValidChain) {

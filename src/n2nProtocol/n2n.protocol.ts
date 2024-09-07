@@ -42,7 +42,6 @@ export class N2NProtocol {
     this.dumpingService = new DumpingService();
     this.recoverService = new RecoverService();
     this.recoverNodeId();
-    this.getMainNodeVerify();
     this.handleMsgService = new N2NHandleMessagesService(
       this.nodeId,
       this.isMainNode
@@ -57,11 +56,15 @@ export class N2NProtocol {
       if (data) {
         this.nodeId = data;
 
+        this.getMainNodeVerify();
+
         return;
       } else {
         const newHash = this.generateNodeId();
         this.nodeId = newHash;
         this.dumpingService.saveNodeIdN2N(newHash);
+
+        this.getMainNodeVerify();
       }
     } catch (e) {
       console.log(e);

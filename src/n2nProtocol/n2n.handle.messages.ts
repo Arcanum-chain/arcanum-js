@@ -30,7 +30,7 @@ export class N2NHandleMessagesService {
     this.memPoolService = MemPool.getInstance();
   }
 
-  public getMainNode(msg: N2NRequest) {
+  public async getMainNode(msg: N2NRequest) {
     try {
       const userPublicKey = msg.payload?.publicKey;
 
@@ -50,6 +50,8 @@ export class N2NHandleMessagesService {
       this.peersStore.setNewNode(newNode);
       this.peersStore.addActiveNode(newNode.nodeId, newNode.user);
 
+      const chain = await this.blockChainStore.getChain();
+
       const sendMsg = {
         message: MessageTypes.SUCCESSFUL_VERIFY_NEW_NODE,
         payload: {
@@ -59,14 +61,12 @@ export class N2NHandleMessagesService {
           data: {
             list: this.peersStore.protocolNodes,
             actives: this.peersStore.protocolNodesActive,
-            blockChain: this.blockChainStore.getChain(),
+            blockChain: chain,
             users: this.blockChainStore.getAllUsers(),
             txsInMemPool: this.blockChainStore.getAllTransactionsFromMemPull(),
             metadata: {
               difficulty: this.metadataStore.getDifficulty,
-              blockReward: this.metadataStore.getBlockReward(
-                this.blockChainStore.getChain().length
-              ),
+              blockReward: this.metadataStore.getBlockReward(chain.length),
               lastVerifyBlock: this.metadataStore.getLastVerifyBlockInChain,
             },
           },
@@ -152,6 +152,8 @@ export class N2NHandleMessagesService {
   public addNewUserFromNode(msg: N2NResponse<User>) {
     try {
       const user = msg.payload.data;
+
+      console.log(msg);
 
       this.securityAssistentService.verifyNewUserFromNode(user);
       this.blockChainStore.setNewUserFromOtherNode(user);

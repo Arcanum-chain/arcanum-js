@@ -73,11 +73,9 @@ export class BlockTransaction {
       signature: this.signature,
     });
 
-    const key = `${this.sender}`;
-
     const transactionHash = crypto
-      .createHash("sha256")
-      .update(crypto.createHmac("sha256", key).update(data).digest())
+      .createHash("sha512")
+      .update(crypto.createHash("sha512").update(data).digest())
       .digest();
 
     return `${DEFAULT_HASH_PREFIX}${transactionHash.toString("hex")}`;
@@ -122,8 +120,10 @@ export class BlockTransaction {
     }
   }
 
-  public verifySign(data: string, signature: string, publicKey: string) {
+  public verifySign(data: string, signature: string, address: string) {
     try {
+      const { publicKey } = this.store.getUserByAddress(address);
+
       const publicKeyWithHeaders = this.keyService.addHeadersToKey(
         publicKey,
         "PUBLIC"
@@ -173,7 +173,7 @@ export class BlockTransaction {
     try {
       this.txActions.checkTransferUsers(this.sender, this.to);
 
-      const sender = this.store.getUserByPublicKey(this.sender);
+      const sender = this.store.getUserByAddress(this.sender);
 
       const { updatedSenderBal, gas } = this.createCommission(
         +this.convertLaService.toLa(sender.balance)

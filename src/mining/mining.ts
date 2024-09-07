@@ -23,10 +23,11 @@ export class MiningBlock {
     this.merkleTreeService = new MerkleTree();
   }
 
-  public mineBlock(block: Block) {
+  public async mineBlock(block: Block) {
     try {
       let nonce = 0;
-      this.calculateDifficulty();
+      await this.calculateDifficulty();
+      const chain = await this.store.getChain();
 
       while (true) {
         const blockHash = block.calculateHash();
@@ -42,8 +43,8 @@ export class MiningBlock {
         ) {
           block.hash = `${DEFAULT_HASH_PREFIX}${proofingHash}`;
           block.data.blockHash = `${DEFAULT_HASH_PREFIX}${proofingHash}`;
-          block.index =
-            this.store.getChain()[this.store.getChain().length - 1].index + 1;
+          block.index = chain[chain.length - 1].index + 1;
+          block.nonce = nonce;
 
           return this.appendCoinBaseTx(block);
         }
@@ -75,7 +76,8 @@ export class MiningBlock {
         let totalFeeRei = 0;
 
         transactions.forEach((tx) => {
-          block.data.transactions[tx.hash] = tx;
+          tx.hash = `${block.index}::${tx.hash}`;
+          block.data.transactions[`${block.index}::${tx.hash}`] = tx;
           totalFeeRei += tx.fee;
         });
 
@@ -106,11 +108,11 @@ export class MiningBlock {
     }
   }
 
-  public calculateDifficulty() {
+  public async calculateDifficulty() {
     try {
+      const chain = await this.store.getChain();
       const lastBlockTimestamp =
-        this.store.getChain()[this.store.getChain().length - 1]?.timestamp ??
-        Date.now();
+        chain[chain.length - 1]?.timestamp ?? Date.now();
       const currentTimestamp = Date.now();
       const timeTaken = currentTimestamp - lastBlockTimestamp;
 

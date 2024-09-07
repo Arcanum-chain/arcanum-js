@@ -90,12 +90,11 @@ async function boostrap() {
   // const ec = new EC("secp256k1");
   const keyPair = await generateKeyPair();
   const privateKey =
-    "MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgMnLNRySSTndYMdHsQ0LJrDOAsGZBO8w5I+tr+sU9kaqhRANCAARyNlvZyqbSq3pHNkZk03bkRJqAmKxUn5G1RkdlJA0nZjZkIwi2aopQiMbJ1EVqUwFSLuKfmtZHJQdWnG0kK4yZ";
+    "MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg9sMDAVW3nxNKPUeHeZZ5CS1b+Ge0xejHggjbD+4X/Z2hRANCAARu4qFZDe04Ry8KqGXP+mHpNpmN2OzUEvk+VyGdDCmAsLktF/lTYZkwDGnL+EQv9flLjCMbBz8AHRt1pwpFoOkl";
 
   const transactionData = JSON.stringify({
-    sender:
-      "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEcjZb2cqm0qt6RzZGZNN25ESagJisVJ+RtUZHZSQNJ2Y2ZCMItmqKUIjGydRFalMBUi7in5rWRyUHVpxtJCuMmQ==",
-    to: "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEL4wmzPezc+zI09vu4hz6QG/ArkP16xLEoW1GgPlb0WcVBbrwVzfJNOF0kDqVtY9IVmdUUPkMEbYY2gE+MtJwbQ==",
+    sender: "0xxxfA4Z8YLfcMoNGk78CDZRu3U83LCCJBmuRH",
+    to: "0xxxf5bT39ZEssN7uYhQ4zx8yGgjZ3vaFcvhjQ",
     amount: 5,
   });
 
@@ -113,3 +112,62 @@ async function boostrap() {
 }
 
 boostrap();
+const { generateKeyPairSync } = require("crypto");
+const { keccak256 } = require("js-sha3");
+const bs58 = require("bs58");
+
+// Функция генерации адреса пользователя
+function generateUserAddress() {
+  // Генерация пары ключей
+  const keyPair = generateKeyPairSync("ec", {
+    publicKeyEncoding: {
+      type: "spki",
+      format: "pem",
+    },
+    privateKeyEncoding: {
+      type: "pkcs8",
+      format: "pem",
+    },
+    namedCurve: "secp256k1",
+  });
+
+  // Извлечение открытого ключа
+  const publicKey = keyPair.publicKey;
+
+  // Хэширование открытого ключа с помощью SHA3-256 (KECCAK-256)
+  const hash = keccak256(publicKey.toString("hex"));
+  const sha512 = crypto
+    .createHash("sha512")
+    .update(publicKey.toString("hex"))
+    .digest("hex");
+  console.log("Keccak:", hash);
+  console.log("Sha-512:", sha512);
+
+  // Извлечение последних 20 байт хэша
+  const addressBytes = hash.slice(-20);
+
+  // Добавление 41 к началу массива байт
+  addressBytes[0] += 41;
+
+  // Дважды хэширование адреса с помощью SHA3-256
+  const confirmationCode = Buffer(
+    keccak256(keccak256(addressBytes)).slice(0, 4)
+  );
+
+  // Добавление кода подтверждения в конец адреса
+  const fullAddress = Buffer.concat([Buffer(addressBytes), confirmationCode]);
+
+  const encodedAddress = bs58.default.encode(fullAddress);
+
+  // Добавление префикса "T"
+  const networkAddress = `0xfff${encodedAddress}`;
+
+  return networkAddress;
+}
+
+// Пример использования
+// const address = generateUserAddress();
+// console.log("Адрес пользователя:", address); // Вывод адреса пользователя
+
+// T6DPGjzG3Ujkzve3YQqVVbteXAr8AfBeYi
+// TLWYdRYbhH39jFjJZhHgbq9N3t68EXPQNG

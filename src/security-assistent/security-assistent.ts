@@ -51,9 +51,9 @@ export class SecurityAssistent {
     }
   }
 
-  private verifyChainConsensusBy40Blocks(newBlock: IBlock) {
+  private async verifyChainConsensusBy40Blocks(newBlock: IBlock) {
     try {
-      const chain = this.store.getChain();
+      const chain = await this.store.getChain();
       chain.push(newBlock);
       const isVerify40Blocks = this.chainInLast40VerifyBlocks(chain);
 
@@ -88,10 +88,10 @@ export class SecurityAssistent {
     }
   }
 
-  public usersExist(senderKey: string, toKey: string): boolean {
+  public usersExist(senderAdr: string, toAdr: string): boolean {
     try {
-      const sender = this.store.getUserByPublicKey(senderKey);
-      const to = this.store.getUserByPublicKey(toKey);
+      const sender = this.store.getUserByAddress(senderAdr);
+      const to = this.store.getUserByAddress(toAdr);
 
       if (!sender || !to) {
         throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
@@ -138,7 +138,7 @@ export class SecurityAssistent {
 
   public verifyNewUserFromNode(user: User) {
     try {
-      const emptyUser = this.store.users[user.publicKey];
+      const emptyUser = this.store.users[user.address];
 
       if (emptyUser) {
         throw new BlockChainError(BlockChainErrorCodes.DUPLICATE_DATA);
@@ -146,7 +146,7 @@ export class SecurityAssistent {
 
       return true;
     } catch (e) {
-      throw e;
+      console.log(e);
     }
   }
 
@@ -156,8 +156,8 @@ export class SecurityAssistent {
       const to = tx.data.to;
       const amount = tx.data.amount;
 
-      const senderFromChain = this.store.getUserByPublicKey(sender);
-      this.store.getUserByPublicKey(to);
+      const senderFromChain = this.store.getUserByAddress(sender);
+      this.store.getUserByAddress(to);
 
       if (+senderFromChain.balance - tx.fee < amount) {
         throw new BlockChainError(

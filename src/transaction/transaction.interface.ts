@@ -8,7 +8,7 @@ export interface Transaction {
     timestamp: number;
   };
   blockHash: string;
-  readonly hash: string;
+  hash: string;
   readonly fee: number;
 }
 

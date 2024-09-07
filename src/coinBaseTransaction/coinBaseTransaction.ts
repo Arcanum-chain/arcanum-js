@@ -49,9 +49,9 @@ export class CoinBaseTransaction {
     }
   }
 
-  private gerReward() {
+  private async gerReward() {
     try {
-      const chainLength = this.store.getChain().length;
+      const chainLength = (await this.store.getChain()).length;
       const reward = this.metaStore.getBlockReward(chainLength);
 
       return this.convertService.toRei(`${reward}`);
@@ -84,7 +84,7 @@ export class CoinBaseTransaction {
 
   private validate(): boolean {
     try {
-      const miner = this.store.getUserByPublicKey(this.minerAddress);
+      const miner = this.store.getUserByAddress(this.minerAddress);
 
       if (!miner) throw new Error();
 
