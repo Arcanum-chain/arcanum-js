@@ -1,11 +1,14 @@
 import cors from "cors";
 import express from "express";
 
+import { Logger } from "../../logger";
+
 import { RestRouter } from "./routers/rest.router";
 
 export class RestClient {
   private readonly router: RestRouter;
   private readonly port: number;
+  private readonly logger = new Logger();
 
   constructor(port: number) {
     this.router = new RestRouter();
@@ -22,10 +25,10 @@ export class RestClient {
       app.use("/rest-api", this.router.getRouter());
 
       app.listen(this.port, () =>
-        console.log(`[REST_CLIENT]: Listen to port ${this.port}`)
+        this.logger.info(`REST_CLIENT Listen to port ${this.port}`)
       );
     } catch (e) {
-      throw new Error(`[REST_CLIENT::INITIAL]: Error: ${(e as Error).message}`);
+      throw new Error(`REST_CLIENT::INITIAL Error: ${(e as Error).message}`);
     }
   }
 }

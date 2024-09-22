@@ -1,4 +1,4 @@
-import type { IBlock } from "@/block/block.interface";
+import type { IBlock } from "../../blockchain-common";
 
 export interface MetadataBlockchain {
   difficulty: number;

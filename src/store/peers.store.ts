@@ -2,32 +2,33 @@ import EventEmitter from "events";
 
 import { PeersEventMessage } from "../constants";
 
+import { CocoAPI } from "../coconut-db/src/index";
+
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
-import type {
-  N2NNode,
-  NodeList,
-} from "../n2nProtocol/interfaces/node.interface";
+
+import type { N2NNode, NodeList } from "../protocol";
 
 class PeersStore extends EventEmitter {
   public protocolNodes: NodeList = {};
   public protocolNodesActive: Record<string, N2NNode> = {};
+  private readonly cocoApi: CocoAPI;
 
-  public setNewNode(newNode: N2NNode) {
+  constructor() {
+    super();
+
+    this.cocoApi = CocoAPI.getInstance();
+  }
+
+  public async setNewNode(newNode: N2NNode) {
     try {
-      if (!this.protocolNodes[newNode.user]) {
-        this.protocolNodes[newNode.user] = [];
-      }
-
-      if (
-        this.protocolNodes[newNode.user].filter(
-          ({ nodeId }) => nodeId === newNode.nodeId
-        ).length > 0
-      ) {
-        throw new BlockChainError(BlockChainErrorCodes.DUPLICATE_DATA);
-      }
-
-      this.protocolNodes[newNode.user].push(newNode);
-      this.protocolNodesActive[newNode.nodeId] = newNode;
+      await this.cocoApi.protocolRepo.n2nNodes.create({
+        key: newNode.nodeId,
+        data: newNode,
+      });
+      await this.cocoApi.protocolRepo.activeN2nNodes.create({
+        key: newNode.nodeId,
+        data: newNode,
+      });
       this.emit(PeersEventMessage.ADD_NEW_NODE, newNode);
 
       return true;
@@ -67,32 +68,27 @@ class PeersStore extends EventEmitter {
     }
   }
 
-  public addActiveNode(nodeId: string, userPublicKey: string) {
+  public async addActiveNode(nodeId: string, userPublicKey: string) {
     try {
-      const node = this.protocolNodes[userPublicKey].filter(
-        ({ nodeId: id }) => id === nodeId
-      )[0];
-
-      if (!node) {
-        throw new Error();
-      }
-
-      if (this.protocolNodesActive[node.nodeId]) {
-        return;
-      }
+      const node = await this.cocoApi.protocolRepo.activeN2nNodes.findOne(
+        nodeId
+      );
 
       node.isActive = true;
       node.lastActive = Date.now();
 
-      this.protocolNodesActive[node.nodeId] = node;
+      await this.cocoApi.protocolRepo.activeN2nNodes.update({
+        key: nodeId,
+        updateData: node,
+      });
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
   }
 
-  public getActiveNodes() {
+  public async getActiveNodes() {
     try {
-      return Object.values(this.protocolNodesActive);
+      return await this.cocoApi.protocolRepo.activeN2nNodes.findMany();
     } catch (e) {
       console.log(e);
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);

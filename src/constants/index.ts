@@ -6,3 +6,5 @@ export * from "./defult.dumping.paths";
 export * from "./events.messages";
 export * from "./gas.constants";
 export * from "./peers.constanrs";
+export * from "./node-files.contants";
+export * from "./logger-files.constants";

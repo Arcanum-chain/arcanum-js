@@ -1,1 +1,0 @@
-{"version":3,"file":"gas.d.ts","sourceRoot":"./src/index.ts/","sources":["gas/gas.ts"],"names":[],"mappings":"AAAA,OAAO,EACL,oBAAoB,EAGrB,MAAM,cAAc,CAAC;AAItB,qBAAa,aAAa;IAIZ,OAAO,CAAC,QAAQ,CAAC,WAAW;IAHxC,OAAO,CAAC,QAAQ,CAAC,SAAS,CAAS;IACnC,OAAO,CAAC,QAAQ,CAAC,gBAAgB,CAAqB;gBAEzB,WAAW,EAAE,MAAM;IAKzC,iBAAiB,CAAC,UAAU,EAAE,oBAAoB,GAAG,MAAM;CAyBnE"}

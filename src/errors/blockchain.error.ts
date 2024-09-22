@@ -7,7 +7,9 @@ export class BlockChainError extends Error {
   public code: number;
 
   constructor(code: BlockChainErrorCodes) {
-    super(BlockChainTextError[code]);
+    const error = BlockChainTextError[code];
+
+    super(typeof error === "string" ? error : error());
 
     this.code = code;
   }

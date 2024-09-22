@@ -90,12 +90,12 @@ async function boostrap() {
   // const ec = new EC("secp256k1");
   const keyPair = await generateKeyPair();
   const privateKey =
-    "MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg9sMDAVW3nxNKPUeHeZZ5CS1b+Ge0xejHggjbD+4X/Z2hRANCAARu4qFZDe04Ry8KqGXP+mHpNpmN2OzUEvk+VyGdDCmAsLktF/lTYZkwDGnL+EQv9flLjCMbBz8AHRt1pwpFoOkl";
+    "MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg/O8yVfQNVqGAQGBYjUhwgssloCXH5CQNFjuN5gAD2+ahRANCAAQb5zxdMNeeRlRF2Vq3oAcIsNaXcL8iSuBLb1WK/2yAsfkpsjf9BQEGMKjSIQ4oKvCuXi8GysYVuML1mGW9ZgnN";
 
   const transactionData = JSON.stringify({
-    sender: "0xxxfA4Z8YLfcMoNGk78CDZRu3U83LCCJBmuRH",
-    to: "0xxxf5bT39ZEssN7uYhQ4zx8yGgjZ3vaFcvhjQ",
-    amount: 5,
+    sender: "0xxxf9s3u5Yd1qTjUSgupL7NzzR7o9XbnH9Nnp",
+    to: "0xxxf5rFkRWimSpF6TdULvuZnhxpa2DoZepM2q",
+    amount: 2,
   });
 
   const signature = signData(transactionData, privateKey);

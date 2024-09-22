@@ -1,4 +1,4 @@
-import { BlockChain } from "../../../../chain/chain";
+import { BlockChain } from "../../../../blockchain-common/chain/chain";
 
 import { TransformError } from "../../errors";
 
@@ -14,6 +14,20 @@ export class TxService {
   @TransformError()
   public async createTx(body: ICreateTxDto) {
     const data = await this.blockchainApi.createTransaction(body);
+
+    return data;
+  }
+
+  @TransformError()
+  public async getTxByHashInMempool(hash: string) {
+    const data = await this.blockchainApi.getTxByHash(hash);
+
+    return data;
+  }
+
+  @TransformError()
+  public async getAllTxsInMempool() {
+    const data = await this.blockchainApi.getTxs();
 
     return data;
   }

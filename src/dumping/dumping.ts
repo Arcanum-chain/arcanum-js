@@ -3,9 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import type { MetadataBlockchain } from "@/basic/interface/metadata.blockchain";
-import type { Transaction } from "@/transaction/transaction.interface";
-import { User } from "@/user/user.interface";
-import { IBlock } from "../block/block.interface";
+import type { Transaction, User, IBlock } from "../blockchain-common";
 import { DefaultDumpingPaths } from "../constants";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
@@ -31,6 +29,7 @@ export class DumpingService {
 
   public async dumpingUsers(users: User[]) {
     try {
+      console.log(users);
       await Promise.all(
         users.map(async (user, i) => {
           return await this.writableDataBlockchain(
@@ -47,10 +46,10 @@ export class DumpingService {
 
   public async dumpingNewBlock(newBlock: IBlock) {
     try {
-      await this.writableDataBlockchain(
-        newBlock,
-        `${DefaultDumpingPaths.BLOCKS_DIR}/${newBlock.index}`
-      );
+      // await this.writableDataBlockchain(
+      //   newBlock,
+      //   `${DefaultDumpingPaths.BLOCKS_DIR}/${newBlock.index}`
+      // );
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_BLOCKCHAIN_DUMP);
     }

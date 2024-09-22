@@ -28,7 +28,7 @@ class ConvertToLaService {
             if (isNaN(intAmount)) {
                 throw new Error("Invalid amount type");
             }
-            return Number(intAmount);
+            return intAmount;
         }
         catch (e) {
             throw e;

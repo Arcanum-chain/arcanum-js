@@ -1,30 +1,46 @@
 import EventEmitter from "events";
 
-import { DataSource } from "../database/datasource.service";
+import { CocoAPI } from "../coconut-db/src/index";
 
 import { EventMessage } from "../constants";
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
-import type { Transaction } from "@/transaction/transaction.interface";
-import { IBlock } from "../block/block.interface";
-import type { User } from "../user/user.interface";
+import type { Transaction, IBlock, User } from "../blockchain-common";
 
 class BlockChainStore extends EventEmitter {
   public chain: Record<IBlock["hash"], IBlock> = {};
   public users: Record<User["address"], User> = {};
   public memPullTransactions: Record<Transaction["hash"], Transaction> = {};
   public pendingBlocks: IBlock[] = [];
-  private readonly db: DataSource;
+  private readonly cocoApi: CocoAPI;
 
   constructor() {
     super();
 
-    this.db = DataSource.getInstance();
+    this.cocoApi = CocoAPI.getInstance();
   }
 
   public async addGenesisBlock(genesisBlock: IBlock) {
     try {
-      await this.db.blocks.create({
+      let [checkData] =
+        await this.cocoApi.getDataSource.meta.techMeta.findMany();
+
+      if (checkData?.hasAlreadyGenesisBlock) {
+        throw new BlockChainError(BlockChainErrorCodes.GENESIS_BLOCK_EXIST);
+      }
+
+      if (!checkData) {
+        await this.cocoApi.getDataSource.meta.techMeta.create({
+          key: "tech",
+          data: { hasAlreadyGenesisBlock: true },
+        });
+
+        checkData = (
+          await this.cocoApi.getDataSource.meta.techMeta.findMany()
+        )[0];
+      }
+
+      await this.cocoApi.chainRepo.blocks.create({
         key: genesisBlock.hash,
         data: genesisBlock,
       });
@@ -35,8 +51,18 @@ class BlockChainStore extends EventEmitter {
 
   public async getChain(): Promise<IBlock[]> {
     try {
-      return await this.db.blocks.findMany();
-    } catch {
+      const start = new Date().getTime();
+
+      const data = await this.cocoApi.chainRepo.blocks.findMany();
+      const sortedData = data.sort((a, b) => b.index - a.index);
+
+      const end = new Date().getTime();
+
+      console.log("Время выполнения = " + (end - start));
+
+      return sortedData;
+    } catch (e) {
+      console.log(e);
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
   }
@@ -49,36 +75,45 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public synchronizeChain(newChain: IBlock[]) {
+  public async synchronizeChain(newChain: IBlock[]) {
     try {
-      this.chain = {};
+      await this.cocoApi.chainRepo.blocks.clearAllDatabase();
 
       for (const block of newChain) {
-        this.chain[block.hash] = block;
+        await this.cocoApi.chainRepo.blocks.create({
+          key: block.hash,
+          data: block,
+        });
       }
     } catch (e) {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }
   }
 
-  public synchronizeUser(users: User[]) {
+  public async synchronizeUser(users: User[]) {
     try {
-      this.users = {};
+      await this.cocoApi.chainRepo.users.clearAllDatabase();
 
       for (const user of users) {
-        this.users[user.address] = user;
+        await this.cocoApi.chainRepo.users.create({
+          key: user.address,
+          data: user,
+        });
       }
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }
   }
 
-  public synchronizeTxMemPool(transactions: Transaction[]) {
+  public async synchronizeTxMemPool(transactions: Transaction[]) {
     try {
-      this.memPullTransactions = {};
+      await this.cocoApi.chainRepo.txs.clearAllDatabase();
 
       for (const tx of transactions) {
-        this.memPullTransactions[tx?.hash] = tx;
+        await this.cocoApi.chainRepo.txs.create({
+          key: tx?.hash,
+          data: tx,
+        });
         this.emit(EventMessage.TRANSACTION_ADD_IN_MEMPOOL, tx);
       }
     } catch {
@@ -88,7 +123,7 @@ class BlockChainStore extends EventEmitter {
 
   public async getBlockByHash(blockHash: string): Promise<IBlock> {
     try {
-      const block = await this.db.blocks.findOne(blockHash);
+      const block = await this.cocoApi.chainRepo.blocks.findOne(blockHash);
 
       return block;
     } catch (e) {
@@ -118,7 +153,7 @@ class BlockChainStore extends EventEmitter {
       const key = block.hash;
       this.pendingBlocks = [];
 
-      await this.db.blocks.create({ key, data: block });
+      await this.cocoApi.chainRepo.blocks.create({ key, data: block });
 
       return true;
     } catch (e) {
@@ -128,19 +163,21 @@ class BlockChainStore extends EventEmitter {
 
   public async setNewBlockToChainFromOtherNode(block: IBlock) {
     try {
-      await this.db.blocks.create({ key: block.hash, data: block });
+      await this.cocoApi.chainRepo.blocks.create({
+        key: block.hash,
+        data: block,
+      });
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN);
     }
   }
 
-  public setNewUser(newUser: User): boolean {
+  public async setNewUser(newUser: User): Promise<boolean> {
     try {
-      if (this.users[newUser.address]) {
-        throw new Error();
-      }
-
-      this.users[newUser.address] = newUser;
+      await this.cocoApi.chainRepo.users.create({
+        key: newUser.address,
+        data: newUser,
+      });
       this.emit(EventMessage.USER_ADDED, newUser);
 
       return true;
@@ -151,9 +188,9 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public getUserByAddress(address: string): User {
+  public async getUserByAddress(address: string): Promise<User> {
     try {
-      const user = this.users[address];
+      const user = await this.cocoApi.chainRepo.users.findOne(address);
 
       if (!user) {
         throw new Error();
@@ -173,36 +210,43 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public getAllUsers(): User[] {
+  public async getAllUsers(): Promise<User[]> {
     try {
-      return Object.values(this.users);
+      const data = await this.cocoApi.chainRepo.users.findMany();
+
+      return data;
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
   }
 
-  public setNewTransactionToMemPull(transaction: Transaction): boolean {
+  public async setNewTransactionToMemPull(
+    transaction: Transaction
+  ): Promise<boolean> {
     try {
       if (this.memPullTransactions[transaction.hash]) {
         throw new Error();
       }
 
-      this.memPullTransactions[transaction.hash] = transaction;
-
+      await this.cocoApi.chainRepo.txs.create({
+        key: transaction.hash,
+        data: transaction,
+      });
       this.emit(EventMessage.TRANSACTION_ADD_IN_MEMPOOL, transaction);
 
       return true;
-    } catch (e) {
-      console.log(e);
+    } catch {
       throw new BlockChainError(
         BlockChainErrorCodes.FAIL_SAVE_TRANSACTION_TO_MEM_PULL
       );
     }
   }
 
-  public getTransactionByHash(transactionHash: string): Transaction {
+  public async getTransactionByHash(
+    transactionHash: string
+  ): Promise<Transaction> {
     try {
-      const transaction = this.memPullTransactions[transactionHash];
+      const transaction = this.cocoApi.chainRepo.txs.findOne(transactionHash);
 
       if (!transaction) throw new Error();
 
@@ -212,26 +256,35 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public getAllTransactionsFromMemPull() {
+  public async getAllTransactionsFromMemPull() {
     try {
-      return Object.values(this.memPullTransactions);
+      return await this.cocoApi.chainRepo.txs.findMany();
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
   }
 
-  public updateUserBalance(publicKey: string, balance: string): boolean {
+  public async updateUserBalance(
+    address: string,
+    balance: string
+  ): Promise<boolean> {
     try {
-      const user = this.users[publicKey];
+      const user = await this.cocoApi.chainRepo.users.findOne(address);
 
       if (!user) {
         throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
       }
 
       user.balance = balance;
+      await this.cocoApi.chainRepo.users.update({
+        key: user.address,
+        updateData: {
+          balance: balance,
+        },
+      });
 
       this.emit(EventMessage.UPDATE_USER_BALANCE, {
-        userKey: publicKey,
+        userKey: address,
         newBalance: balance,
       });
 
@@ -241,15 +294,15 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public deleteTxFromMemPool(txHash: string): boolean {
+  public async deleteTxFromMemPool(txHash: string): Promise<boolean> {
     try {
-      const tx = this.memPullTransactions[txHash];
+      const hash = txHash.split("::")[1];
 
-      if (!tx) {
-        throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+      if (!hash) {
+        throw new Error(`Invalid tx hash, received ${txHash}`);
       }
 
-      delete this.memPullTransactions[tx.hash];
+      await this.cocoApi.chainRepo.txs.deleteOne({ static: hash });
 
       return true;
     } catch (e) {

@@ -1,4 +1,4 @@
-import { IBlock } from "../block/block.interface";
+import type { IBlock } from "../blockchain-common";
 
 export interface MetaChain {
   difficulty: number;
@@ -12,4 +12,8 @@ export enum MetaFields {
   LAST_VERIFY_BLOCK_IN_CHAIN = "lastVerifyBlockInChain",
   BLOCK_REWARD = "blockReward",
   TOTAL_SUPPLY = "totalSupply",
+}
+
+export interface TechMeta {
+  readonly hasAlreadyGenesisBlock: boolean;
 }

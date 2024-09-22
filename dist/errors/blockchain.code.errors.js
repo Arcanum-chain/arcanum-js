@@ -29,6 +29,9 @@ var BlockChainErrorCodes;
     BlockChainErrorCodes[BlockChainErrorCodes["BAD_DATA"] = 601] = "BAD_DATA";
     BlockChainErrorCodes[BlockChainErrorCodes["FAIL_ROLLBACK_CB_TX"] = 602] = "FAIL_ROLLBACK_CB_TX";
     BlockChainErrorCodes[BlockChainErrorCodes["INVALID_TXS_ROOT_HASH"] = 603] = "INVALID_TXS_ROOT_HASH";
+    BlockChainErrorCodes[BlockChainErrorCodes["GENESIS_BLOCK_EXIST"] = 106] = "GENESIS_BLOCK_EXIST";
+    BlockChainErrorCodes[BlockChainErrorCodes["CREATE_DIR_ERROR"] = 1100] = "CREATE_DIR_ERROR";
+    BlockChainErrorCodes[BlockChainErrorCodes["INSUFFICIENT_FUNDS"] = 1101] = "INSUFFICIENT_FUNDS";
 })(BlockChainErrorCodes || (exports.BlockChainErrorCodes = BlockChainErrorCodes = {}));
 exports.BlockChainTextError = {
     [BlockChainErrorCodes.CONNECT_NODE_ERROR]: "Connect node error!!!",
@@ -57,5 +60,8 @@ exports.BlockChainTextError = {
     [BlockChainErrorCodes.FAIL_ROLLBACK_CB_TX]: "Fail rollback coinbase transaction!",
     [BlockChainErrorCodes.FAIL_SYNCHRONIZE_CHAIN_METADATA]: "Fail synchronize chain metadata!!!",
     [BlockChainErrorCodes.INVALID_TXS_ROOT_HASH]: "Invalid transactions in block root hash!!!",
+    [BlockChainErrorCodes.GENESIS_BLOCK_EXIST]: "Genesis block has already exist!!!",
+    [BlockChainErrorCodes.CREATE_DIR_ERROR]: `Create dir error`,
+    [BlockChainErrorCodes.INSUFFICIENT_FUNDS]: "Insufficient funds",
 };
 //# sourceMappingURL=blockchain.code.errors.js.map

@@ -34,7 +34,6 @@ ${key}
       namedCurve: "secp256k1",
     });
 
-    // Удаление BEGIN/END строк из ключей
     const privateKeyWithoutHeaders = privateKey.replace(
       /-----BEGIN PRIVATE KEY-----|\n-----END PRIVATE KEY-----/g,
       ""

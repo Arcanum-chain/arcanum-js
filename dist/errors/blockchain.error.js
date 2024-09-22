@@ -4,7 +4,8 @@ exports.BlockChainError = void 0;
 const blockchain_code_errors_1 = require("./blockchain.code.errors");
 class BlockChainError extends Error {
     constructor(code) {
-        super(blockchain_code_errors_1.BlockChainTextError[code]);
+        const error = blockchain_code_errors_1.BlockChainTextError[code];
+        super(typeof error === "string" ? error : error());
         this.code = code;
     }
 }

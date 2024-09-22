@@ -2,7 +2,7 @@ import { VerifyBlockService } from "./verify.block.util.service";
 
 import { BlockChainError, BlockChainErrorCodes } from "../errors";
 
-import type { Transaction } from "@/transaction/transaction.interface";
+import type { Transaction } from "../blockchain-common";
 
 export class MerkleTree {
   private readonly verifyBlockService: VerifyBlockService;

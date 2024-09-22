@@ -1,1 +1,0 @@
-//# sourceMappingURL=mining.interface.d.ts.map

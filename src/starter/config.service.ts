@@ -1,6 +1,11 @@
 import { config } from "dotenv";
+import yaml from "js-yaml";
+import fs from "fs";
+import os from "node:os";
+import path from "node:path";
 
-import { EnvConfigModelKeys, KeyEnvsObj } from "./models/env.models";
+import { EnvConfigModelKeys, EnvProto, KeyEnvsObj } from "./models/env.models";
+import { DEFAULT_HASH_PREFIX, DEFAULT_DIR } from "../constants";
 
 config();
 
@@ -13,22 +18,22 @@ export class ConfigService {
 
   private parseEnv() {
     try {
-      const envs = process.env;
+      const filePath = path.resolve(os.homedir(), DEFAULT_DIR, "config.yml");
+      const fileContent = fs.readFileSync(filePath, "utf8");
 
-      const payloadObj: Record<string, number | string | boolean | undefined> =
-        {};
+      const config = yaml.load(fileContent);
 
-      const entries = Object.entries(envs);
-
-      const expectedKeysArr = Object.keys(EnvConfigModelKeys);
-
-      for (const [key, value] of entries) {
-        if (expectedKeysArr.includes(key)) {
-          payloadObj[key] = value;
-        }
+      if (typeof config !== "object" || config == null) {
+        throw new Error(
+          "Ошибка: Неверный формат YAML-файла. Ожидается объект."
+        );
       }
 
-      const parsedEnvs = this.validatePayloadObj(payloadObj);
+      const parseEnvs = {};
+
+      this.saveEnvs(config, parseEnvs);
+
+      const parsedEnvs = this.validatePayloadObj(parseEnvs);
 
       this.env = parsedEnvs as unknown as KeyEnvsObj;
     } catch (e) {
@@ -71,12 +76,50 @@ export class ConfigService {
           }
         }
 
+        if (parseEnvValue === undefined && typeof env === "string") {
+          this.checkValidationRules<string>(value, env as string);
+        }
+
         obj[key] = parseEnvValue ?? env;
 
         continue;
       }
 
       return obj;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  private checkValidationRules<T>(expectProto: EnvProto, value: T) {
+    try {
+      if (!expectProto.validationRules) {
+        return;
+      }
+
+      if (expectProto.validationRules.isUserAddress) {
+        if (!(value as string).startsWith(DEFAULT_HASH_PREFIX)) {
+          throw new Error(
+            `[STARTER::ENV]: Validation rule isUserAddress returned error, expect address, received ${value}\nDetails: ${value} not started "${DEFAULT_HASH_PREFIX}" prefix`
+          );
+        }
+      }
+
+      return;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  private saveEnvs(config: object, obj: Record<string, any>) {
+    try {
+      Object.entries(config).map(([key, value]) => {
+        if (typeof value === "object") {
+          return this.saveEnvs(value, obj);
+        } else {
+          obj[key] = value;
+        }
+      });
     } catch (e) {
       throw e;
     }

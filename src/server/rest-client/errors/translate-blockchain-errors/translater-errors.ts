@@ -13,4 +13,8 @@ export const TranslateBlockchainErrorToHttpError: Record<number, number> = {
   [BlockChainErrorCodes.FAIL_SAVE_TRANSACTION_TO_MEM_PULL]: 500,
   [BlockChainErrorCodes.INVALID_CONSENSUS_STATUS]: 403,
   [BlockChainErrorCodes.NOT_FOUND_ENTITY]: 404,
+  [BlockChainErrorCodes.INVALID_VERIFY_TRANSACTION]: 403,
+  [BlockChainErrorCodes.INVALID_TXS_ROOT_HASH]: 403,
+  [BlockChainErrorCodes.GENESIS_BLOCK_EXIST]: 403,
+  [BlockChainErrorCodes.INSUFFICIENT_FUNDS]: 403,
 };

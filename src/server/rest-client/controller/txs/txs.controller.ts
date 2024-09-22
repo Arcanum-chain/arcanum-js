@@ -15,4 +15,20 @@ export class RestTxsController {
 
     return data;
   }
+
+  @ErrorHandling()
+  public async txByHashInMempool(req: Request) {
+    const hash = req.params.hash;
+
+    const data = await new TxService().getTxByHashInMempool(hash);
+
+    return data;
+  }
+
+  @ErrorHandling()
+  public async getAllInMempool() {
+    const data = await new TxService().getAllTxsInMempool();
+
+    return data;
+  }
 }

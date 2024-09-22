@@ -24,7 +24,10 @@ export declare enum BlockChainErrorCodes {
     FAIL_COINBASE_TX = 600,
     BAD_DATA = 601,
     FAIL_ROLLBACK_CB_TX = 602,
-    INVALID_TXS_ROOT_HASH = 603
+    INVALID_TXS_ROOT_HASH = 603,
+    GENESIS_BLOCK_EXIST = 106,
+    CREATE_DIR_ERROR = 1100,
+    INSUFFICIENT_FUNDS = 1101
 }
-export declare const BlockChainTextError: Record<BlockChainErrorCodes, string>;
+export declare const BlockChainTextError: Record<BlockChainErrorCodes, string | Function>;
 //# sourceMappingURL=blockchain.code.errors.d.ts.map

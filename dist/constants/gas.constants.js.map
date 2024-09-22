@@ -1,1 +1,1 @@
-{"version":3,"file":"gas.constants.js","sourceRoot":"./src/index.ts/","sources":["constants/gas.constants.ts"],"names":[],"mappings":";;;AAAA,IAAY,aAIX;AAJD,WAAY,aAAa;IACvB,+DAAmB,CAAA;IACnB,gEAAoB,CAAA;IACpB,8EAA2B,CAAA;AAC7B,CAAC,EAJW,aAAa,6BAAb,aAAa,QAIxB"}
+{"version":3,"file":"gas.constants.js","sourceRoot":"./src/index.ts/","sources":["constants/gas.constants.ts"],"names":[],"mappings":";;;AAAA,IAAY,aAIX;AAJD,WAAY,aAAa;IACvB,+DAAmB,CAAA;IACnB,gEAAoB,CAAA;IACpB,6EAA0B,CAAA;AAC5B,CAAC,EAJW,aAAa,6BAAb,aAAa,QAIxB"}

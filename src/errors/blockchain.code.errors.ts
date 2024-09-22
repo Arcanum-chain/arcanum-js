@@ -25,9 +25,15 @@ export enum BlockChainErrorCodes {
   BAD_DATA = 601,
   FAIL_ROLLBACK_CB_TX = 602,
   INVALID_TXS_ROOT_HASH = 603,
+  GENESIS_BLOCK_EXIST = 106,
+  CREATE_DIR_ERROR = 1100,
+  INSUFFICIENT_FUNDS = 1101,
 }
 
-export const BlockChainTextError: Record<BlockChainErrorCodes, string> = {
+export const BlockChainTextError: Record<
+  BlockChainErrorCodes,
+  string | Function
+> = {
   [BlockChainErrorCodes.CONNECT_NODE_ERROR]: "Connect node error!!!",
   [BlockChainErrorCodes.INVALID_CONSENSUS_STATUS]:
     "Invalid consensus in you node!!!",
@@ -71,4 +77,8 @@ export const BlockChainTextError: Record<BlockChainErrorCodes, string> = {
     "Fail synchronize chain metadata!!!",
   [BlockChainErrorCodes.INVALID_TXS_ROOT_HASH]:
     "Invalid transactions in block root hash!!!",
+  [BlockChainErrorCodes.GENESIS_BLOCK_EXIST]:
+    "Genesis block has already exist!!!",
+  [BlockChainErrorCodes.CREATE_DIR_ERROR]: `Create dir error`,
+  [BlockChainErrorCodes.INSUFFICIENT_FUNDS]: "Insufficient funds",
 };

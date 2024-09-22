@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VerifyBlockService = void 0;
 const node_crypto_1 = __importDefault(require("node:crypto"));
+const js_sha3_1 = require("js-sha3");
 const errors_1 = require("../errors");
 const default_hash_prefix_1 = require("../constants/default.hash.prefix");
 class VerifyBlockService {
@@ -30,10 +31,7 @@ class VerifyBlockService {
     }
     genHash(data) {
         try {
-            return node_crypto_1.default
-                .createHash("sha256")
-                .update(node_crypto_1.default.createHash("sha256").update(data).digest("hex"))
-                .digest("hex");
+            return (0, js_sha3_1.keccak256)(node_crypto_1.default.createHash("sha256").update(data).digest("hex"));
         }
         catch (e) {
             throw e;

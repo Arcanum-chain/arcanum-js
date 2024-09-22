@@ -1,4 +1,4 @@
-import { BlockChain } from "../../../../chain/chain";
+import { BlockChain } from "../../../../blockchain-common/chain/chain";
 
 import { TransformError } from "../../errors";
 
