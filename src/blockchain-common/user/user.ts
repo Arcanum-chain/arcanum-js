@@ -30,9 +30,7 @@ export class BlockChainUser {
       if (isOk) {
         const newUser: User = {
           publicKey,
-          balance: JSON.parse(process.env.IS_THE_TEST_NODE as string)
-            ? "100"
-            : "0",
+          balance: "100",
           address: userAddress,
         };
 

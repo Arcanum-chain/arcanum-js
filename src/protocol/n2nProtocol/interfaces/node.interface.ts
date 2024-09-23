@@ -5,6 +5,7 @@ export interface N2NNode {
   nodeId: string;
   lastActive: number;
   isActive: boolean;
+  publicKey: string;
 }
 
 export type NodeList = Record<string, N2NNode[]>;

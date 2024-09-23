@@ -37,11 +37,23 @@ class PeersStore extends EventEmitter {
     }
   }
 
-  public get getAllNodes() {
+  public async getAllNodes() {
     try {
-      return this.protocolNodes;
+      const data = await this.cocoApi.protocolRepo.n2nNodes.findMany();
+
+      return data;
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
+    }
+  }
+
+  public async getNodeByNodeId(nodeId: string) {
+    try {
+      const node = await this.cocoApi.protocolRepo.n2nNodes.findOne(nodeId);
+
+      return node;
+    } catch (e) {
+      throw e;
     }
   }
 

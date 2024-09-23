@@ -53,10 +53,10 @@ export class MemPool extends Singleton {
     }
   }
 
-  public addNewTxFromOtherNode(tx: Transaction) {
+  public async addNewTxFromOtherNode(tx: Transaction) {
     try {
-      this.store.setNewTxFromOtherNode(tx);
-      this.sortedTransactionFromMemPool();
+      await this.store.setNewTxFromOtherNode(tx);
+      await this.sortedTransactionFromMemPool();
     } catch (e) {
       throw e;
     }

@@ -5,6 +5,11 @@ export interface N2NResponse<T> {
   readonly payload: {
     readonly data: T;
     readonly senderNodeId: string;
-    readonly isMainNodeSender: boolean;
+    readonly isMainNodeSender?: boolean;
+  };
+  readonly headers: {
+    readonly signature: string;
+    readonly origin: string; // reinode protocol url
+    readonly timestamp: number;
   };
 }

@@ -1,11 +1,15 @@
 import type { MessageTypes } from "../constants/message.types";
 
 export interface N2NRequest {
-  message: MessageTypes;
-  payload: {
-    nodeId: string;
-    data: any;
-    publicKey?: string;
-    origin: string;
+  readonly message: MessageTypes;
+  readonly payload: {
+    readonly senderNodeId: string;
+    readonly data: any;
+    readonly ownerAddress?: string;
+  };
+  readonly headers: {
+    readonly origin: string; // reinode protocol url
+    readonly timestamp: number;
+    readonly signature: string;
   };
 }

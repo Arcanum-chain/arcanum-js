@@ -164,9 +164,9 @@ export class SecurityAssistent {
     }
   }
 
-  public verifyNewUserFromNode(user: User) {
+  public async verifyNewUserFromNode(user: User) {
     try {
-      const emptyUser = this.store.users[user.address];
+      const emptyUser = await this.store.getUserByAddress(user.address);
 
       if (emptyUser) {
         throw new BlockChainError(BlockChainErrorCodes.DUPLICATE_DATA);

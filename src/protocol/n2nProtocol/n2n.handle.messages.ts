@@ -6,6 +6,8 @@ import {
   MetadataBlockchainStore,
   PeersStore,
 } from "../../store";
+import { VerifyNode } from "../verify-node/verify-node.service";
+import { N2NParseUrl } from "../parse-url/parse-url.service";
 
 import type { IBlock, Transaction, User } from "../../blockchain-common";
 import { MessageTypes } from "./constants/message.types";
@@ -22,6 +24,8 @@ export class N2NHandleMessagesService {
   private readonly confirmationBlockService: typeof BlockConfirmationService =
     BlockConfirmationService;
   private readonly memPoolService: MemPool;
+  private readonly verifyNodeService: VerifyNode;
+  private readonly paseUrlService: N2NParseUrl;
 
   constructor(
     private readonly nodeId: string,
@@ -29,23 +33,28 @@ export class N2NHandleMessagesService {
   ) {
     this.securityAssistentService = new SecurityAssistent();
     this.memPoolService = MemPool.getInstance();
+    this.verifyNodeService = new VerifyNode();
+    this.paseUrlService = new N2NParseUrl();
   }
 
-  public async getMainNode(msg: N2NRequest) {
+  public async getMainNode(message: N2NRequest) {
     try {
-      const userPublicKey = msg.payload?.publicKey;
+      const ownerAddress = message?.payload?.ownerAddress;
 
-      if (!userPublicKey) {
+      if (!ownerAddress) {
         throw new BlockChainError(BlockChainErrorCodes.BAD_GATEWAY);
       }
 
+      const { nodeId } = this.paseUrlService.getWsUrl(message?.headers?.origin);
+
       const newNode = {
-        user: userPublicKey,
-        nodeId: msg.payload.nodeId,
+        user: ownerAddress,
+        nodeId: nodeId ?? "",
         timestamp: Date.now(),
-        url: msg.payload.origin,
+        url: message.headers.origin,
         lastActive: Date.now(),
         isActive: true,
+        publicKey: message?.payload?.data?.publicKey,
       };
 
       this.peersStore.setNewNode(newNode);
@@ -53,72 +62,65 @@ export class N2NHandleMessagesService {
 
       const chain = await this.blockChainStore.getChain();
 
-      const sendMsg = {
-        message: MessageTypes.SUCCESSFUL_VERIFY_NEW_NODE,
-        payload: {
-          nodeId: msg.payload.nodeId,
-          senderNodeId: this.nodeId,
-          isMainNodeSender: this.isMainNode,
-          data: {
-            list: this.peersStore.protocolNodes,
-            actives: this.peersStore.protocolNodesActive,
-            blockChain: chain,
-            users: this.blockChainStore.getAllUsers(),
-            txsInMemPool: this.blockChainStore.getAllTransactionsFromMemPull(),
-            metadata: {
-              difficulty: this.metadataStore.getDifficulty,
-              blockReward: this.metadataStore.getBlockReward(chain.length),
-              lastVerifyBlock: this.metadataStore.getLastVerifyBlockInChain,
-            },
-          },
+      const data = {
+        list: this.peersStore.protocolNodes,
+        actives: this.peersStore.protocolNodesActive,
+        blockChain: chain,
+        users: this.blockChainStore.getAllUsers(),
+        txsInMemPool: this.blockChainStore.getAllTransactionsFromMemPull(),
+        metadata: {
+          difficulty: this.metadataStore.getDifficulty,
+          blockReward: this.metadataStore.getBlockReward(chain.length),
+          lastVerifyBlock: this.metadataStore.getLastVerifyBlockInChain,
         },
       };
 
-      return sendMsg;
+      const msg = await this.createMsg(
+        MessageTypes.SUCCESSFUL_VERIFY_NEW_NODE,
+        data
+      );
+
+      return msg;
     } catch (e) {
       throw e;
     }
   }
 
-  public addNewBlockFromNode(msg: N2NResponse<IBlock>) {
+  public async addNewBlockFromNode(msg: N2NResponse<IBlock>) {
     try {
       const isNotMyNode = this.notSenderNodeFilter(msg.payload.senderNodeId);
 
       if (isNotMyNode) {
         this.securityAssistentService.verifyNewBlock(msg.payload.data);
 
-        this.blockChainStore.setNewBlockToChainFromOtherNode(msg.payload.data);
+        await this.blockChainStore.setNewBlockToChainFromOtherNode(
+          msg.payload.data
+        );
 
-        const sendMsg = {
-          message: MessageTypes.NODES_VERIFY_BLOCK,
-          payload: {
-            senderNodeId: this.nodeId,
-            nodeId: msg.payload.senderNodeId,
-            data: {
-              hash: msg.payload.data.hash,
-              isVerify: true,
-            } as ResponseConfirmVerifyNodeBlockDto,
-            isMainNodeSender: this.isMainNode,
-          },
-        };
+        const data = {
+          hash: msg.payload.data.hash,
+          isVerify: true,
+        } as ResponseConfirmVerifyNodeBlockDto;
+
+        const sendMsg = await this.createMsg(
+          MessageTypes.NODES_VERIFY_BLOCK,
+          data
+        );
 
         return sendMsg;
       }
 
       throw new BlockChainError(BlockChainErrorCodes.IS_MY_NODE);
     } catch (e) {
-      const sendMsg = {
-        message: MessageTypes.NODES_VERIFY_BLOCK,
-        payload: {
-          senderNodeId: this.nodeId,
-          nodeId: msg.payload.senderNodeId,
-          data: {
-            hash: msg.payload.data.hash,
-            isVerify: false,
-          } as ResponseConfirmVerifyNodeBlockDto,
-          isMainNodeSender: this.isMainNode,
-        },
-      };
+      const data = {
+        hash: msg.payload.data.hash,
+        isVerify: false,
+      } as ResponseConfirmVerifyNodeBlockDto;
+
+      const sendMsg = await this.createMsg(
+        MessageTypes.NODES_VERIFY_BLOCK,
+        data
+      );
 
       return sendMsg;
     }
@@ -144,20 +146,18 @@ export class N2NHandleMessagesService {
       await this.securityAssistentService.verifyNewTxInMemPoolFromOtherNode(
         msg.payload.data
       );
-      this.memPoolService.addNewTxFromOtherNode(msg.payload.data);
+      await this.memPoolService.addNewTxFromOtherNode(msg.payload.data);
     } catch (e) {
       throw e;
     }
   }
 
-  public addNewUserFromNode(msg: N2NResponse<User>) {
+  public async addNewUserFromNode(msg: N2NResponse<User>) {
     try {
       const user = msg.payload.data;
 
-      console.log(msg);
-
-      this.securityAssistentService.verifyNewUserFromNode(user);
-      this.blockChainStore.setNewUserFromOtherNode(user);
+      await this.securityAssistentService.verifyNewUserFromNode(user);
+      await this.blockChainStore.setNewUserFromOtherNode(user);
     } catch (e) {
       throw e;
     }
@@ -170,6 +170,34 @@ export class N2NHandleMessagesService {
       }
 
       return true;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  private async createMsg<T>(type: MessageTypes, data: T) {
+    try {
+      const timestamp = new Date().getTime();
+      const signature = await this.verifyNodeService.createSignature(
+        this.nodeId,
+        timestamp
+      );
+
+      const sendMsg: N2NResponse<T> = {
+        message: type,
+        payload: {
+          senderNodeId: this.nodeId,
+          isMainNodeSender: this.isMainNode,
+          data: data,
+        },
+        headers: {
+          timestamp,
+          signature,
+          origin,
+        },
+      };
+
+      return sendMsg;
     } catch (e) {
       throw e;
     }

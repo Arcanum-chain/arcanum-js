@@ -10,6 +10,9 @@ import { PeersStore } from "../../store";
 import { N2NController } from "./n2n.controller";
 import { N2NHandleMessagesService } from "./n2n.handle.messages";
 import { SerializeProtocolData } from "./serialize.data";
+import { N2NParseUrl } from "../parse-url/parse-url.service";
+import { VerifyNode } from "../verify-node/verify-node.service";
+import { VerifyNodeSignatureMiddleware } from "./middlewares/verify-signature.middleware";
 
 import { MessageTypes } from "./constants/message.types";
 import type { N2NProtocolConstructorInterface } from "./interfaces/constructor.interface";
@@ -29,11 +32,14 @@ export class N2NProtocol {
   private readonly n2nBlockChainAdapter: Node2NodeAdapter;
   private readonly dumpingService: DumpingService;
   private readonly recoverService: RecoverService;
+  private readonly parseUrlService: N2NParseUrl;
+  private readonly verifyNodeService: VerifyNode;
+  public nodePublicKey: string = "";
 
   constructor(
     private readonly port: number,
     public readonly mainNodeUrl: string,
-    public readonly publicKey: string,
+    public readonly ownerAddress: string,
     props?: N2NProtocolConstructorInterface
   ) {
     this.serializeService = new SerializeProtocolData();
@@ -47,6 +53,8 @@ export class N2NProtocol {
       this.isMainNode
     );
     this.n2nBlockChainAdapter = new Node2NodeAdapter();
+    this.parseUrlService = new N2NParseUrl();
+    this.verifyNodeService = new VerifyNode();
   }
 
   private async recoverNodeId() {
@@ -71,20 +79,29 @@ export class N2NProtocol {
     }
   }
 
+  public setNodePublicKey(key: string) {
+    try {
+      this.nodePublicKey = key;
+    } catch (e) {
+      throw e;
+    }
+  }
+
   private async getMainNodeVerify() {
     try {
       if (this.isMainNode) {
         const node: N2NNode = {
           url: this.getLocalIPAddress(),
           timestamp: Date.now(),
-          user: this.publicKey,
+          user: this.ownerAddress,
           nodeId: this.nodeId,
           lastActive: Date.now(),
           isActive: true,
+          publicKey: this.nodePublicKey,
         };
 
         await this.store.setNewNode(node);
-        await this.store.addActiveNode(node.nodeId, this.publicKey);
+        await this.store.addActiveNode(node.nodeId, this.ownerAddress);
 
         return;
       }
@@ -97,15 +114,23 @@ export class N2NProtocol {
         console.log(
           `Node by id ${this.nodeId} connected to main node(url: ${this.mainNodeUrl})`
         );
+        const timestamp = new Date().getTime();
 
         this.sendMessage(
           {
             message: MessageTypes.GET_MAIN_NODE,
             payload: {
-              nodeId: this.nodeId,
-              data: this.isMainNode,
-              publicKey: this.publicKey,
+              senderNodeId: this.nodeId,
+              data: {
+                isMainNode: this.isMainNode,
+                publicKey: this.nodePublicKey,
+              },
+              ownerAddress: this.ownerAddress,
+            },
+            headers: {
               origin: this.getLocalIPAddress(),
+              timestamp,
+              signature: "",
             },
           },
           ws
@@ -126,34 +151,47 @@ export class N2NProtocol {
     }
   }
 
-  public createConnection() {
+  public async createConnection() {
     try {
       const peers = this.store.protocolNodesActive;
 
-      Object.values(peers)
-        .filter((node) => node.nodeId !== this.nodeId)
-        .forEach((peer: N2NNode) => {
-          const ws = new WebSocket(peer.url, {
-            handshakeTimeout: 1000,
-          });
+      await Promise.all(
+        Object.values(peers)
+          .filter((node) => node.nodeId !== this.nodeId)
+          .map(async (peer: N2NNode) => {
+            const parsedUrl = this.parseUrlService.getWsUrl(peer.url);
 
-          ws.on("open", () => {
-            this.store.addActiveNode(this.nodeId, this.publicKey);
+            const ws = new WebSocket(parsedUrl.url, {
+              handshakeTimeout: 1000,
+            });
 
-            this.sendMessage(
-              {
-                message: MessageTypes.CONNECT_NODE,
-                payload: {
-                  nodeId: this.nodeId,
-                  origin: this.getLocalIPAddress(),
-                  data: "",
-                  publicKey: this.publicKey,
+            ws.on("open", async () => {
+              this.store.addActiveNode(this.nodeId, this.ownerAddress);
+              const timestamp = new Date().getTime();
+              const signature = await this.verifyNodeService.createSignature(
+                this.nodeId,
+                timestamp
+              );
+
+              this.sendMessage(
+                {
+                  message: MessageTypes.CONNECT_NODE,
+                  payload: {
+                    senderNodeId: parsedUrl.nodeId as string,
+                    data: "",
+                    ownerAddress: this.ownerAddress,
+                  },
+                  headers: {
+                    origin: this.getLocalIPAddress(),
+                    signature,
+                    timestamp,
+                  },
                 },
-              },
-              ws
-            );
-          });
-        });
+                ws
+              );
+            });
+          })
+      );
     } catch (e) {
       throw e;
     }
@@ -161,12 +199,23 @@ export class N2NProtocol {
 
   public async sendMsgAllToNodes<T>(data: T, msgType: MessageTypes) {
     try {
+      const timestamp = new Date().getTime();
+      const signature = await this.verifyNodeService.createSignature(
+        this.nodeId,
+        timestamp
+      );
+
       const message: N2NResponse<T> = {
         message: msgType,
         payload: {
           data: data,
           senderNodeId: this.nodeId,
           isMainNodeSender: this.isMainNode,
+        },
+        headers: {
+          origin: this.getLocalIPAddress(),
+          timestamp,
+          signature,
         },
       };
 
@@ -272,34 +321,42 @@ export class N2NProtocol {
 
   private async broadcastMessage(message: N2NResponse<any>) {
     if (this.wss) {
-      (await this.store.getActiveNodes()).forEach((client: N2NNode) => {
-        if (client.nodeId !== this.nodeId) {
-          const ws = new WebSocket(client.url, {
-            handshakeTimeout: 1000,
-          });
+      await Promise.all(
+        (
+          await this.store.getActiveNodes()
+        ).map(async (client: N2NNode) => {
+          if (client.nodeId !== this.nodeId) {
+            const parsedUrl = this.parseUrlService.getWsUrl(client.url);
 
-          ws.on("open", () => {
-            this.sendResMessage(message, ws)
-              .then()
-              .catch((e) => console.log(e));
-          });
+            const ws = new WebSocket(parsedUrl.url, {
+              handshakeTimeout: 1000,
+            });
 
-          ws.on("message", (msg: string) => {
-            const data = this.serializeService.deserialize(msg, "res");
+            ws.on("open", async () => {
+              await this.sendResMessage(message, ws);
+            });
 
-            this.handleMessage(data as N2NResponse<any>, ws);
-          });
+            ws.on("message", async (msg: string) => {
+              const data = this.serializeService.deserialize(msg, "res");
 
-          ws.on("error", () => {
-            console.log("Websocket disconnected");
-          });
-        }
-      });
+              await this.handleMessage(data as N2NResponse<any>, ws);
+            });
+
+            ws.on("error", () => {
+              console.log("Websocket disconnected");
+            });
+          }
+        })
+      );
     }
   }
 
-  private handleMessage(msg: N2NRequest | N2NResponse<any>, ws: WebSocket) {
+  private async handleMessage(
+    msg: N2NRequest | N2NResponse<any>,
+    ws: WebSocket
+  ) {
     try {
+      await new VerifyNodeSignatureMiddleware().use(msg, ws);
       new N2NController(msg, ws, this.nodeId);
     } catch (e) {
       throw e;
@@ -312,10 +369,14 @@ export class N2NProtocol {
       // @ts-expect-error
       for (const iface of interfaces[name]) {
         if (iface.family === "IPv4" && !iface.internal) {
-          return `ws://${iface.address}:${this.port}`;
+          return this.parseUrlService.createReiUrl(
+            this.nodeId,
+            iface.address,
+            this.port
+          );
         }
       }
     }
-    return ""; // Возвращаем пустую строку, если не нашли IP-адрес
+    return "";
   }
 }

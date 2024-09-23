@@ -38,15 +38,12 @@ export class N2NController {
             this.msg as N2NRequest
           );
 
-          this.sendResMessage(sendMsg, this.ws)
-            .then()
-            .catch((e) => console.log(e));
-
+          await this.sendResMessage(sendMsg, this.ws);
           break;
         case MessageTypes.CONNECT_NODE:
           this.store.addActiveNode(
-            (this.msg as N2NRequest).payload.nodeId,
-            (this.msg as N2NRequest).payload.publicKey as string
+            (this.msg as N2NRequest).payload.senderNodeId,
+            (this.msg as N2NRequest).payload.ownerAddress as string
           );
 
           break;
@@ -55,13 +52,11 @@ export class N2NController {
             this.nodeId !== (this.msg as N2NResponse<any>).payload.senderNodeId
           ) {
             const sendMsgVerifyBlock =
-              this.handleMsgService.addNewBlockFromNode(
+              await this.handleMsgService.addNewBlockFromNode(
                 this.msg as N2NResponse<IBlock>
               );
 
-            this.sendResMessage(sendMsgVerifyBlock, this.ws)
-              .then((res) => console.log("Response:", res))
-              .catch((e) => console.log(e));
+            await this.sendResMessage(sendMsgVerifyBlock, this.ws);
           }
 
           break;

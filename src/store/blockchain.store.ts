@@ -181,7 +181,7 @@ class BlockChainStore extends EventEmitter {
       this.emit(EventMessage.USER_ADDED, newUser);
 
       return true;
-    } catch {
+    } catch (e) {
       throw new BlockChainError(
         BlockChainErrorCodes.FAIL_SAVE_NEW_USER_TO_STORE
       );
@@ -326,23 +326,26 @@ class BlockChainStore extends EventEmitter {
     }
   }
 
-  public setNewTxFromOtherNode(tx: Transaction) {
+  public async setNewTxFromOtherNode(tx: Transaction) {
     try {
-      const empty = this.memPullTransactions[tx.hash];
+      const empty = await this.cocoApi.chainRepo.txs.findOne(tx.hash);
 
       if (empty) {
         throw new BlockChainError(BlockChainErrorCodes.DUPLICATE_DATA);
       }
 
-      this.memPullTransactions[tx.hash] = tx;
+      await this.cocoApi.chainRepo.txs.create({ key: tx.hash, data: tx });
     } catch (e) {
       throw e;
     }
   }
 
-  public setNewUserFromOtherNode(user: User) {
+  public async setNewUserFromOtherNode(user: User) {
     try {
-      this.users[user.address] = user;
+      await this.cocoApi.chainRepo.users.create({
+        key: user.address,
+        data: user,
+      });
     } catch (e) {
       throw e;
     }

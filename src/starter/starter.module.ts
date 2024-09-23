@@ -44,7 +44,7 @@ export class NodeStarter extends Singleton {
     this.n2nProtocol = new N2NProtocol(
       this.cfg.env.WS_PORT,
       this.cfg.env.WS_NODE_URL,
-      "test",
+      this.cfg.env.OWNER_NODE_ADDRESS,
       {
         isMainNode: this.cfg.env.IS_MAIN_NODE,
       }
@@ -61,6 +61,14 @@ export class NodeStarter extends Singleton {
       await new RestClient(this.cfg.env.PORT).start();
       new ChocolateJo(this.n2nProtocol);
 
+      const nodePubKey = await this.nodeFilesManagerService.getPublicKey();
+      this.n2nProtocol.setNodePublicKey(nodePubKey);
+
+      await this.cocoApi.protocolRepo.activeN2nNodes.clearAllDatabase();
+      const a = await this.cocoApi.protocolRepo.n2nNodes.findMany();
+
+      console.log(a);
+
       // await this.cocoApi.getDataSource.meta.techMeta.clearAllDatabase();
       // await this.cocoApi.chainRepo.blocks.clearAllDatabase();
       // await this.cocoApi.chainRepo.meta.update({
@@ -74,7 +82,7 @@ export class NodeStarter extends Singleton {
       this.fsSecurity.safetyFs();
 
       if (this.cfg.env.IS_SUPPORT_MINING) {
-        await this.startMining();
+        // await this.startMining();
       }
     } catch (e) {
       throw e;

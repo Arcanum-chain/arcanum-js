@@ -63,6 +63,56 @@ export class NodeFilesService {
     }
   }
 
+  public async getPrivateKey(): Promise<string> {
+    try {
+      const data: string = await this.readFile(
+        `${NodeFilesPaths.KEYS_DIR}/${NodeFilesPaths.PRIVATE_KEY_FILE_NAME}`
+      );
+
+      if (data.length === 0) {
+        throw new Error("Not found data");
+      }
+
+      return data;
+    } catch (e) {
+      throw new Error(
+        `FS Get node private key error!\nDetails: ${(e as Error).message}`
+      );
+    }
+  }
+
+  public async getPublicKey() {
+    try {
+      const data: string = await this.readFile(
+        `${NodeFilesPaths.KEYS_DIR}/${NodeFilesPaths.PUBLIC_KEY_FILE_NAME}`
+      );
+
+      if (data.length === 0) {
+        throw new Error("Not found data");
+      }
+
+      return data;
+    } catch (e) {
+      throw new Error(
+        `FS Get node public key error!\nDetails: ${(e as Error).message}`
+      );
+    }
+  }
+
+  public async getNodeId(): Promise<string> {
+    try {
+      const data = await this.readFile(`${NodeFilesPaths.NODE_ID_FILE_NAME}`);
+
+      if (!data) {
+        throw new Error();
+      }
+
+      return data;
+    } catch (e) {
+      throw e;
+    }
+  }
+
   private async readFile(pathToFile: string) {
     try {
       const homedir = os.homedir();

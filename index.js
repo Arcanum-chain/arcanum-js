@@ -63,8 +63,6 @@ function verifySignature(data, signature, publicKey) {
   try {
     const publicKeyWithHeaders = addHeadersToKey(publicKey, "PUBLIC KEY");
 
-    console.log(publicKeyWithHeaders);
-
     const verifier = crypto.createVerify("sha256");
     verifier.update(data);
     verifier.end();
