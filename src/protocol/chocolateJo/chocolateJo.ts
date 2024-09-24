@@ -63,7 +63,6 @@ export class ChocolateJo {
       this.broadcastNewUser();
       this.broadcastTxInMemPool();
     } catch (e) {
-      console.log(e);
       throw e;
     }
   }

@@ -275,17 +275,11 @@ class BlockChainStore extends EventEmitter {
         throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
       }
 
-      user.balance = balance;
       await this.cocoApi.chainRepo.users.update({
         key: user.address,
         updateData: {
           balance: balance,
         },
-      });
-
-      this.emit(EventMessage.UPDATE_USER_BALANCE, {
-        userKey: address,
-        newBalance: balance,
       });
 
       return true;
