@@ -14,12 +14,10 @@ export class SecurityAssistent {
   private readonly metaStore: typeof MetadataBlockchainStore =
     MetadataBlockchainStore;
   private readonly verifyBlockService: VerifyBlockService;
-  private readonly merkleTreeService: MerkleTree;
   private readonly convertService: ConvertToLaService;
 
   constructor() {
     this.verifyBlockService = new VerifyBlockService();
-    this.merkleTreeService = new MerkleTree();
     this.convertService = new ConvertToLaService();
   }
 
@@ -28,7 +26,11 @@ export class SecurityAssistent {
     rootHash: string
   ) {
     try {
-      this.merkleTreeService.verifyTxsMerkleTree(rootHash, Object.values(txs));
+      const tree = new MerkleTree(Object.values(txs));
+
+      for (const tx of Object.values(txs)) {
+        tree.verifyTxInMerkleTree(tx);
+      }
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.INVALID_CONSENSUS_STATUS);
     }

@@ -64,11 +64,6 @@ export class NodeStarter extends Singleton {
       const nodePubKey = await this.nodeFilesManagerService.getPublicKey();
       this.n2nProtocol.setNodePublicKey(nodePubKey);
 
-      await this.cocoApi.protocolRepo.activeN2nNodes.clearAllDatabase();
-      const a = await this.cocoApi.protocolRepo.n2nNodes.findMany();
-
-      console.log(a);
-
       // await this.cocoApi.getDataSource.meta.techMeta.clearAllDatabase();
       // await this.cocoApi.chainRepo.blocks.clearAllDatabase();
       // await this.cocoApi.chainRepo.meta.update({

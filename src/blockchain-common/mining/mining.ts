@@ -15,14 +15,12 @@ export class MiningBlock {
   private readonly store: typeof BlockChainStore = BlockChainStore;
   private readonly memPool: MemPool;
   private readonly txActions: TransactionActions;
-  private readonly merkleTreeService: MerkleTree;
   private readonly logger = new Logger();
 
   constructor(public readonly minerAddress: string) {
     this.verifyBlockService = new VerifyBlockService();
     this.memPool = MemPool.getInstance();
     this.txActions = new TransactionActions();
-    this.merkleTreeService = new MerkleTree();
   }
 
   public async mineBlock(block: Block) {
@@ -66,7 +64,7 @@ export class MiningBlock {
     try {
       const txs = await this.memPool.getPendingTxsToMineBlock();
 
-      const { root } = this.merkleTreeService.buildTxsMerkleTree(txs);
+      const root = new MerkleTree(txs).getRootHash;
 
       return { rootHash: root, transactions: txs };
     } catch (e) {
