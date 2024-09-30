@@ -30,6 +30,7 @@ export class VerifyNode {
   public async verifySignature(dto: VerifySignatureDto) {
     try {
       const data = JSON.stringify(dto.data);
+
       const verifier = crypto.createVerify("sha256");
       verifier.update(data);
       verifier.end();

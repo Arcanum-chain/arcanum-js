@@ -71,9 +71,6 @@ class PeersStore extends EventEmitter {
 
       if (!nodeOnList) throw new Error();
 
-      nodeOnList.isActive = false;
-      nodeOnList.lastActive = Date.now();
-
       delete this.protocolNodesActive[nodeId];
     } catch {
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
@@ -85,9 +82,6 @@ class PeersStore extends EventEmitter {
       const node = await this.cocoApi.protocolRepo.activeN2nNodes.findOne(
         nodeId
       );
-
-      node.isActive = true;
-      node.lastActive = Date.now();
 
       await this.cocoApi.protocolRepo.activeN2nNodes.update({
         key: nodeId,

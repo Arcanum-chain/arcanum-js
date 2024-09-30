@@ -14,6 +14,7 @@ import { MessageTypes } from "./constants/message.types";
 import type { ResponseConfirmVerifyNodeBlockDto } from "./dto/res-confirm-verify-block.dto";
 import type { N2NRequest } from "./interfaces/req.interface";
 import type { N2NResponse } from "./interfaces/res.interface";
+import { N2NNode } from "./interfaces";
 
 export class N2NHandleMessagesService {
   private readonly blockChainStore: typeof BlockChainStore = BlockChainStore;
@@ -47,14 +48,13 @@ export class N2NHandleMessagesService {
 
       const { nodeId } = this.paseUrlService.getWsUrl(message?.headers?.origin);
 
-      const newNode = {
+      const newNode: N2NNode = {
         user: ownerAddress,
         nodeId: nodeId ?? "",
-        timestamp: Date.now(),
         url: message.headers.origin,
-        lastActive: Date.now(),
-        isActive: true,
         publicKey: message?.payload?.data?.publicKey,
+        udpPort: 0,
+        tcpPort: 0,
       };
 
       this.peersStore.setNewNode(newNode);

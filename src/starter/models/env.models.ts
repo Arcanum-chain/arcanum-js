@@ -1,3 +1,5 @@
+import { NodeTypes } from "../../constants";
+
 export const EnvConfigModelKeys: Record<string, EnvProto> = {
   PORT: {
     required: true,
@@ -24,17 +26,20 @@ export const EnvConfigModelKeys: Record<string, EnvProto> = {
     type: "boolean",
     key: "IS_THE_TEST_NODE",
   },
-  IS_SUPPORT_MINING: {
-    required: true,
-    type: "boolean",
-    key: "IS_SUPPORT_MINING",
-  },
   OWNER_NODE_ADDRESS: {
     required: true,
     type: "string",
     key: "OWNER_NODE_ADDRESS",
     validationRules: {
       isUserAddress: true,
+    },
+  },
+  NODE_TYPE: {
+    required: true,
+    type: "string",
+    key: "NODE_TYPE",
+    validationRules: {
+      enum: NodeTypes,
     },
   },
 };
@@ -45,8 +50,8 @@ export interface KeyEnvsObj {
   IS_MAIN_NODE?: boolean;
   WS_NODE_URL: string;
   IS_THE_TEST_NODE: boolean;
-  IS_SUPPORT_MINING: boolean;
   OWNER_NODE_ADDRESS: string;
+  NODE_TYPE: NodeTypes;
 }
 
 export interface EnvProto {
@@ -55,5 +60,6 @@ export interface EnvProto {
   key: string;
   validationRules?: {
     isUserAddress?: boolean;
+    enum?: object;
   };
 }

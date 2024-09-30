@@ -1,7 +1,7 @@
 import { Singleton } from "../basic";
 
 import { ConfigService } from "./config.service";
-import { BlockLimits } from "../constants";
+import { BlockLimits, NodeTypes } from "../constants";
 import { Logger } from "../logger";
 
 // Chain base
@@ -21,6 +21,7 @@ import { NodeFilesService } from "./node-files/node-files.service";
 import { FsSecurity } from "../blockchain-safety";
 
 import { CocoAPI } from "../coconut-db/src";
+import { DiscoveryProtocol } from "../protocol";
 
 export class NodeStarter extends Singleton {
   private readonly blockchain: BlockChain;
@@ -33,10 +34,12 @@ export class NodeStarter extends Singleton {
   private readonly cocoApi: CocoAPI = CocoAPI.getInstance();
   private readonly fsSecurity = new FsSecurity();
   private readonly logger = new Logger();
+  private restClient?: RestClient;
 
   constructor() {
     super();
 
+    NodeFilesService.createCommonDir();
     this.cfg = new ConfigService();
 
     this.blockchain = BlockChain.getInstance();
@@ -58,26 +61,50 @@ export class NodeStarter extends Singleton {
       await this.nodeFilesManagerService.firstNodeInstance(this.cfg.env);
 
       this.n2nProtocol.createServer();
-      await new RestClient(this.cfg.env.PORT).start();
+      this.restClient = new RestClient(this.cfg.env.PORT);
+      await this.restClient?.start();
       new ChocolateJo(this.n2nProtocol);
 
       const nodePubKey = await this.nodeFilesManagerService.getPublicKey();
+      const nodeId = await this.nodeFilesManagerService.getNodeId();
       this.n2nProtocol.setNodePublicKey(nodePubKey);
 
-      // await this.cocoApi.getDataSource.meta.techMeta.clearAllDatabase();
-      // await this.cocoApi.chainRepo.blocks.clearAllDatabase();
-      // await this.cocoApi.chainRepo.meta.update({
-      //   key: "chain-meta",
-      //   updateData: {
-      //     difficulty: 1,
-      //   },
-      // });
-      // await this.blockchain.createGenesisBlock();
+      const dpt = new DiscoveryProtocol(nodeId, {
+        endpoint: {
+          address: "192.168.0.106",
+          tcpPort: 6001,
+          udpPort: 11002,
+          nodeId: "ewwkrmwerm32r",
+        },
+      });
+
+      await dpt.bootstrap({
+        url: "reinode://eddwd@192.168.0.106:60001",
+        tcpPort: 6001,
+        udpPort: 11002,
+        nodeId: "ewwkrmwerm32r",
+        user: "dwedw",
+        publicKey: nodePubKey,
+      });
+
+      await this.cocoApi.getDataSource.meta.techMeta.clearAllDatabase();
+      await this.cocoApi.chainRepo.blocks.clearAllDatabase();
+      await this.cocoApi.chainRepo.meta.update({
+        key: "chain-meta",
+        updateData: {
+          difficulty: 1,
+        },
+      });
+      await this.blockchain.createGenesisBlock();
 
       this.fsSecurity.safetyFs();
 
-      if (this.cfg.env.IS_SUPPORT_MINING) {
-        // await this.startMining();
+      this.logger.info(
+        `Start type node ${this.cfg.env.NODE_TYPE}... Happy hashing!`
+      );
+
+      if (this.cfg.env.NODE_TYPE === NodeTypes.MINER) {
+        await this.startMining();
       }
     } catch (e) {
       throw e;
@@ -86,8 +113,7 @@ export class NodeStarter extends Singleton {
 
   public async startMining() {
     try {
-      const minerAddress =
-        await this.nodeFilesManagerService.getNodeCreatorAddress();
+      const minerAddress = this.cfg.env.OWNER_NODE_ADDRESS;
 
       this.miningInterval = setInterval(async () => {
         this.logger.info("MINING Starting mining block");
@@ -112,6 +138,8 @@ export class NodeStarter extends Singleton {
   public async stop() {
     try {
       this.isStart = false;
+      this.n2nProtocol.wssServer?.close();
+      this.restClient?.closeServer();
     } catch (e) {
       throw e;
     }

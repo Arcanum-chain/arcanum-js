@@ -198,6 +198,7 @@ class BlockChainStore extends EventEmitter {
 
       return user;
     } catch (e) {
+      console.log(e);
       throw new BlockChainError(BlockChainErrorCodes.NOT_FOUND_ENTITY);
     }
   }

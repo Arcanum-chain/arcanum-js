@@ -7,6 +7,8 @@ import path from "node:path";
 import { EnvConfigModelKeys, EnvProto, KeyEnvsObj } from "./models/env.models";
 import { DEFAULT_HASH_PREFIX, DEFAULT_DIR } from "../constants";
 
+import { mockData } from "./mock-config/mock-config";
+
 config();
 
 export class ConfigService {
@@ -19,9 +21,21 @@ export class ConfigService {
   private parseEnv() {
     try {
       const filePath = path.resolve(os.homedir(), DEFAULT_DIR, "config.yml");
-      const fileContent = fs.readFileSync(filePath, "utf8");
 
-      const config = yaml.load(fileContent);
+      let config;
+
+      try {
+        const fileContent = fs.readFileSync(filePath, "utf8");
+        config = yaml.load(fileContent);
+      } catch {
+        try {
+          fs.writeFileSync(filePath, mockData, { encoding: "utf-8" });
+          const fileContent = fs.readFileSync(filePath, "utf8");
+          config = yaml.load(fileContent);
+        } catch (e) {
+          throw e;
+        }
+      }
 
       if (typeof config !== "object" || config == null) {
         throw new Error(
@@ -101,6 +115,18 @@ export class ConfigService {
         if (!(value as string).startsWith(DEFAULT_HASH_PREFIX)) {
           throw new Error(
             `[STARTER::ENV]: Validation rule isUserAddress returned error, expect address, received ${value}\nDetails: ${value} not started "${DEFAULT_HASH_PREFIX}" prefix`
+          );
+        }
+      }
+
+      if (expectProto.validationRules.enum) {
+        const arr = Object.values(expectProto.validationRules.enum);
+
+        if (!arr.includes(value)) {
+          throw new Error(
+            `[STARTER::ENV]: Validation rule enum returned error, expect ${arr.join(
+              ","
+            )}, received ${value}`
           );
         }
       }

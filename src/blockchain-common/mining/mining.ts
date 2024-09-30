@@ -44,7 +44,7 @@ export class MiningBlock {
 
           block.hash = `${DEFAULT_HASH_PREFIX}${proofingHash}`;
           block.data.blockHash = `${DEFAULT_HASH_PREFIX}${proofingHash}`;
-          block.index = chain[chain.length - 1].index + 1;
+          block.index = chain[chain.length - 1]?.index + 1;
           block.nonce = nonce;
           block.prevBlockHash = chain[chain.length - 1].hash;
 

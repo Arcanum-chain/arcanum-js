@@ -8,3 +8,4 @@ export * from "./gas.constants";
 export * from "./peers.constanrs";
 export * from "./node-files.contants";
 export * from "./logger-files.constants";
+export * from "./node-types.contants";

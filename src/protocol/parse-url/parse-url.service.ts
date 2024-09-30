@@ -28,4 +28,28 @@ export class N2NParseUrl {
       throw e;
     }
   }
+
+  public getIp(reiUrl: string) {
+    const urlParts = url.parse(reiUrl);
+
+    if (urlParts.protocol === "reinode:") {
+      return urlParts.hostname;
+    }
+
+    throw new Error(
+      `Invalid protocol, expected "reinode:", received "${reiUrl}"`
+    );
+  }
+
+  public getPort(reiUrl: string) {
+    const urlParts = url.parse(reiUrl);
+
+    if (urlParts.protocol === "reinode:") {
+      return parseInt(urlParts.port as string, 10);
+    }
+
+    throw new Error(
+      `Invalid protocol, expected "reinode:", received "${reiUrl}"`
+    );
+  }
 }

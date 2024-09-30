@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import syncFs from "node:fs";
 
 import { NodeFilesPaths, DEFAULT_HASH_PREFIX } from "../../constants";
 import { BlockChainError, BlockChainErrorCodes } from "../../errors";
@@ -14,6 +15,20 @@ export class NodeFilesService {
     this.keyService = new KeyService();
 
     this.createDir(NodeFilesPaths.KEYS_DIR);
+  }
+
+  static createCommonDir() {
+    const homeDir = os.homedir();
+    const dirPath = path.join(homeDir, NodeFilesPaths.COMMON_DIR);
+    try {
+      syncFs.accessSync(dirPath);
+    } catch {
+      try {
+        syncFs.mkdirSync(dirPath);
+      } catch {
+        throw new BlockChainError(BlockChainErrorCodes.CREATE_DIR_ERROR);
+      }
+    }
   }
 
   public async firstNodeInstance(env: KeyEnvsObj) {
@@ -159,21 +174,15 @@ export class NodeFilesService {
     }
   }
 
-  private async createDir(pathToDir: string) {
+  private createDir(pathToDir: string) {
     try {
       const homeDir = os.homedir();
       const dirPath = path.join(homeDir, NodeFilesPaths.COMMON_DIR, pathToDir);
-      const isNotEmpty = await fs
-        .access(dirPath)
-        .then(() => true)
-        .catch(() => false);
 
-      if (isNotEmpty) {
-        return;
+      if (!syncFs.existsSync(dirPath)) {
+        syncFs.mkdirSync(dirPath);
       }
-
-      await fs.mkdir(dirPath);
-    } catch {
+    } catch (e) {
       throw new BlockChainError(BlockChainErrorCodes.CREATE_DIR_ERROR);
     }
   }

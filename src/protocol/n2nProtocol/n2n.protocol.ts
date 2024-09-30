@@ -57,6 +57,10 @@ export class N2NProtocol {
     this.verifyNodeService = new VerifyNode();
   }
 
+  public get wssServer() {
+    return this.wss;
+  }
+
   private async recoverNodeId() {
     try {
       const data = await this.recoverService.recoverNodeId();
@@ -64,15 +68,11 @@ export class N2NProtocol {
       if (data) {
         this.nodeId = data;
 
-        this.getMainNodeVerify();
-
         return;
       } else {
         const newHash = this.generateNodeId();
         this.nodeId = newHash;
         this.dumpingService.saveNodeIdN2N(newHash);
-
-        this.getMainNodeVerify();
       }
     } catch (e) {
       console.log(e);
@@ -83,70 +83,6 @@ export class N2NProtocol {
     try {
       this.nodePublicKey = key;
     } catch (e) {
-      throw e;
-    }
-  }
-
-  private async getMainNodeVerify() {
-    try {
-      if (this.isMainNode) {
-        const node: N2NNode = {
-          url: this.getLocalIPAddress(),
-          timestamp: Date.now(),
-          user: this.ownerAddress,
-          nodeId: this.nodeId,
-          lastActive: Date.now(),
-          isActive: true,
-          publicKey: this.nodePublicKey,
-        };
-
-        await this.store.setNewNode(node);
-        await this.store.addActiveNode(node.nodeId, this.ownerAddress);
-
-        return;
-      }
-
-      const ws = new WebSocket(this.mainNodeUrl, {
-        handshakeTimeout: 1000,
-      });
-
-      ws.on("open", () => {
-        console.log(
-          `Node by id ${this.nodeId} connected to main node(url: ${this.mainNodeUrl})`
-        );
-        const timestamp = new Date().getTime();
-
-        this.sendMessage(
-          {
-            message: MessageTypes.GET_MAIN_NODE,
-            payload: {
-              senderNodeId: this.nodeId,
-              data: {
-                isMainNode: this.isMainNode,
-                publicKey: this.nodePublicKey,
-              },
-              ownerAddress: this.ownerAddress,
-            },
-            headers: {
-              origin: this.getLocalIPAddress(),
-              timestamp,
-              signature: "",
-            },
-          },
-          ws
-        );
-      });
-
-      ws.on("message", (msg: string) => {
-        const message = this.serializeService.deserialize(msg, "res");
-        this.successfulVerifyNewNode(message as N2NResponse<any>);
-      });
-
-      ws.on("close", () => {
-        console.log("Node disconnected :(");
-      });
-    } catch (e) {
-      console.log(e);
       throw e;
     }
   }
