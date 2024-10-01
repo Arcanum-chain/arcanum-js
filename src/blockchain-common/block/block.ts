@@ -14,6 +14,7 @@ export class Block {
   public verify: boolean = false;
   public totalFeeRei: number = 0;
   public nonce: number = 0;
+  public size: number = 0;
 
   private readonly hashService: VerifyBlockService;
 
@@ -57,6 +58,7 @@ export class Block {
         verify: this.verify,
         nonce: this.nonce,
         totalFeeRei: this.totalFeeRei,
+        size: this.size,
       };
 
       return data;

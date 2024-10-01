@@ -29,7 +29,7 @@ function calculateObjectSize(obj) {
     nonce: 0,
   };
 
-  for (let i = 0; i < 2000; i++) {
+  for (let i = 0; i < 15000; i++) {
     obj.data.transactions[i] = item;
   }
 

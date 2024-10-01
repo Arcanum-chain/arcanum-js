@@ -5,7 +5,7 @@ import { Block } from "../block/block";
 import { BlockConfirmationService } from "../confirmationBlock";
 import { MiningBlock } from "../mining/mining";
 import { BlockTransaction, BlockChainUser } from "../index";
-import { VerifyBlockService } from "../../utils/verify.block.util.service";
+import { VerifyBlockService, BytesSize } from "../../utils";
 
 import type { BlockConstructor, IBlock, Transaction, User } from "../index";
 
@@ -16,12 +16,14 @@ export class BlockChain extends Singleton {
   private readonly peersStore: typeof PeersStore = PeersStore;
   private readonly blockConfirmations: typeof BlockConfirmationService =
     BlockConfirmationService;
+  private readonly bytesSizeService: BytesSize;
 
   constructor() {
     super();
 
     this.blockChainUser = new BlockChainUser();
     this.verifyBlockService = new VerifyBlockService();
+    this.bytesSizeService = new BytesSize();
 
     if (this) {
       return this;
@@ -44,6 +46,9 @@ export class BlockChain extends Singleton {
 
     block.verify = true;
 
+    const blockSize = this.bytesSizeService.calculate(block);
+    block.size = blockSize;
+
     const newBlock: IBlock = {
       index: block.index,
       timestamp: block.timestamp,
@@ -52,6 +57,7 @@ export class BlockChain extends Singleton {
       data: { transactions: {}, blockHash: block.hash },
       verify: true,
       nonce: block.nonce,
+      size: block.size,
     };
 
     await this.store.addGenesisBlock(newBlock);

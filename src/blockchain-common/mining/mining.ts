@@ -4,7 +4,7 @@ import { BlockLimits, DEFAULT_HASH_PREFIX } from "../../constants";
 import { MemPool } from "../memPool/memPool";
 import { BlockChainStore, MetadataBlockchainStore } from "../../store";
 import { TransactionActions } from "../transaction/transactionActions";
-import { MerkleTree, VerifyBlockService } from "../../utils";
+import { MerkleTree, VerifyBlockService, BytesSize } from "../../utils";
 import { Logger } from "../../logger";
 
 export class MiningBlock {
@@ -16,11 +16,13 @@ export class MiningBlock {
   private readonly memPool: MemPool;
   private readonly txActions: TransactionActions;
   private readonly logger = new Logger();
+  private readonly bytesSize: BytesSize;
 
   constructor(public readonly minerAddress: string) {
     this.verifyBlockService = new VerifyBlockService();
     this.memPool = MemPool.getInstance();
     this.txActions = new TransactionActions();
+    this.bytesSize = new BytesSize();
   }
 
   public async mineBlock(block: Block) {
@@ -110,6 +112,9 @@ export class MiningBlock {
       block.data.coinBase = await tx.createCoinBaseTx();
 
       await this.appendTxsToBlock(block);
+
+      const blockSize = this.bytesSize.calculate(block);
+      block.size = blockSize;
 
       return block.generateNewBlock();
     } catch (e) {
