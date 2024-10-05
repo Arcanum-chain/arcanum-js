@@ -1,0 +1,3 @@
+[submodule "coconut-db"]
+path = src/coconut-db
+url = https://gitlab.com/ravkchain/coconut-db.git
