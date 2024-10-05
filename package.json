@@ -5,12 +5,13 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "rm -rf ./dist && npx tsc --project ./tsconfig.json",
-    "pkg:build": "rm -rf target && pkg ."
+    "pkg:build": "rm -rf target && pkg .",
+    "prod:pm2": "node starter.node.js"
   },
-  "keywords": [],
-  "bin": {
-    "node-arc": "dist/index.js"
-  },
+  "keywords": [
+    "arcanum",
+    "blockchain"
+  ],
   "pkg": {
     "scripts": "build/**/*.js",
     "assets": [
@@ -52,14 +53,12 @@
   "dependencies": {
     "bs58": "^6.0.0",
     "colors": "^1.4.0",
-    "commander": "^12.1.0",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dgram": "^1.0.1",
     "dotenv": "^16.4.5",
     "elliptic": "^6.5.7",
     "express": "^4.19.2",
-    "inquirer": "^11.1.0",
     "js-sha3": "^0.9.3",
     "js-yaml": "^4.1.0",
     "k-bucket": "^5.1.0",
@@ -67,8 +66,6 @@
     "lru-cache": "^11.0.1",
     "merkletreejs": "^0.4.0",
     "node-cron": "^3.0.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "rlp": "^3.0.0",
     "rocksdb": "^5.2.1",
     "solc": "^0.8.27",

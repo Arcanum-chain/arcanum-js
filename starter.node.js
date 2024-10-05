@@ -1,5 +1,7 @@
 const { exec } = require("child_process");
 
+const name = process.argv[2];
+
 exec("pm2 -v", (err, stdout, stderr) => {
   if (err) {
     console.error(err);
@@ -37,7 +39,9 @@ const installPm2 = () => {
 const startNode = () => {
   return () =>
     exec(
-      "npm run build && pm2 start --name node dist/index.js",
+      `npm run build && pm2 start --name ${
+        name ?? "node"
+      } --namespace arcanum dist/index.js`,
       (err, stdout, stderr) => {
         if (err) {
           console.error(err);
