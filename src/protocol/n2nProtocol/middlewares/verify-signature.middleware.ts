@@ -1,5 +1,7 @@
 import WebSocket from "ws";
 
+import { Logger } from "../../../logger";
+
 import { VerifyNode } from "../../verify-node/verify-node.service";
 import { PeersStore } from "../../../store";
 import { BanListPeersService } from "../../ban-list/ban-list.service";
@@ -10,6 +12,7 @@ export class VerifyNodeSignatureMiddleware {
   private readonly verifyNodeService: VerifyNode;
   private readonly peersStore = PeersStore;
   private readonly banListService: BanListPeersService;
+  private readonly logger = new Logger(VerifyNodeSignatureMiddleware.name);
 
   constructor() {
     this.verifyNodeService = new VerifyNode();
@@ -49,7 +52,9 @@ export class VerifyNodeSignatureMiddleware {
       }
     } catch (e) {
       ws.close();
-      throw e;
+      this.banListService.add(msg.payload.senderNodeId, 300000);
+      this.logger.error(`Unverified node, node id ${msg.payload.senderNodeId}`);
+      return;
     }
   }
 

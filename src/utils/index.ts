@@ -6,3 +6,4 @@ export * from "./merkle-tree.utils";
 export * from "./message-event.interface";
 export * from "./verify.block.util.service";
 export * from "./calculate-size.utils";
+export * from "./bytes.utils";

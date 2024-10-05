@@ -51,7 +51,7 @@ export const BlockChainTextError: Record<
   [BlockChainErrorCodes.FAIL_NODES_DUMP]:
     "Fail this nodes n2n protocol dumps!!!",
   [BlockChainErrorCodes.FAIL_CREATE_DIR]:
-    "Fail create data directory(/.ravkchain)!!!",
+    "Fail create data directory(/.arcanum)!!!",
   [BlockChainErrorCodes.FAIL_NODE_ID_DUMP]: "Fail node id save to file!!!",
   [BlockChainErrorCodes.DOESNT_NOT_BLOCK_BY_HASH]:
     "Not block in chain by this hash!",

@@ -1,3 +1,6 @@
+import { Deferred } from "../discovery/utils";
+import type { N2NResponse } from "../n2nProtocol";
+
 export interface Contact {
   id: Uint8Array;
   address?: string;

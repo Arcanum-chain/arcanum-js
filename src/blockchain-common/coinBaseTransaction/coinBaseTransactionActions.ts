@@ -30,7 +30,7 @@ export class CoinBaseTxActions {
       );
 
       const oldMinerBalanceToLa = +this.convertService.toLa(miner.balance);
-      const newMinerBalance = this.convertService.toRei(
+      const newMinerBalance = this.convertService.toArc(
         String(
           oldMinerBalanceToLa +
             +this.convertService.toLa(String(this.coinBaseTx.totalRewardRei))
@@ -41,7 +41,6 @@ export class CoinBaseTxActions {
 
       return true;
     } catch (e) {
-      console.log(e);
       throw new BlockChainError(BlockChainErrorCodes.FAIL_COINBASE_TX);
     }
   }
@@ -53,14 +52,14 @@ export class CoinBaseTxActions {
           this.coinBaseTx.minerAddress
         );
 
-        const rollbackBalance = this.convertService.toRei(
+        const rollbackBalance = this.convertService.toArc(
           String(
             +this.convertService.toLa(miner.balance) -
               +this.convertService.toLa(this.coinBaseTx.totalRewardRei)
           )
         );
 
-        this.store.updateUserBalance(miner.publicKey, rollbackBalance);
+        await this.store.updateUserBalance(miner.publicKey, rollbackBalance);
 
         return true;
       }

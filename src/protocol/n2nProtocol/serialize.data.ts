@@ -1,36 +1,26 @@
+import rlp from "rlp";
+
 import type { N2NRequest } from "./interfaces/req.interface";
 import type { N2NResponse } from "./interfaces/res.interface";
 
 export class SerializeProtocolData {
-  public serialize(data: any): string {
+  public serialize(data: object): Uint8Array {
     try {
-      const dataToString = JSON.stringify(data);
-
-      const encodeValueString = [...new TextEncoder().encode(dataToString)]
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      return encodeValueString;
+      return rlp.encode(JSON.stringify(data));
     } catch (e) {
       throw e;
     }
   }
 
-  public deserialize(data: string, type: "req" | "res") {
+  public deserialize(data: Uint8Array, type: "req" | "res") {
     try {
-      const dataToString = Buffer.from(data, "hex").toString("utf-8");
+      const val = rlp.decode(data).toString();
 
-      //   @ts-expect-error
-      const decodedString = dataToString
-        .match(/.{1,2}/g)
-        .map((e) => String.fromCharCode(parseInt(e, 16)))
-        .join("");
-
-      if (type === "req") {
-        return JSON.parse(decodedString) as N2NRequest;
+      if (typeof JSON.parse(val) === "object") {
+        return JSON.parse(val);
       }
 
-      return JSON.parse(decodedString) as N2NResponse<any>;
+      return val;
     } catch (e) {
       throw e;
     }

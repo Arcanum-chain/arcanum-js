@@ -29,4 +29,5 @@ export interface DTPOptions {
   readonly timeout?: number;
   readonly onlyConfirmed?: boolean;
   readonly shouldFindNeighbours?: boolean;
+  readonly refreshInterval?: number;
 }

@@ -1,3 +1,5 @@
+import { networkInterfaces } from "node:os";
+
 import { BlockChainError, BlockChainErrorCodes } from "../../errors";
 import { MemPool, BlockConfirmationService } from "../../blockchain-common";
 import { SecurityAssistent } from "../../blockchain-safety";
@@ -14,7 +16,7 @@ import { MessageTypes } from "./constants/message.types";
 import type { ResponseConfirmVerifyNodeBlockDto } from "./dto/res-confirm-verify-block.dto";
 import type { N2NRequest } from "./interfaces/req.interface";
 import type { N2NResponse } from "./interfaces/res.interface";
-import { N2NNode } from "./interfaces";
+import type { N2NNode } from "./interfaces";
 
 export class N2NHandleMessagesService {
   private readonly blockChainStore: typeof BlockChainStore = BlockChainStore;
@@ -193,7 +195,7 @@ export class N2NHandleMessagesService {
         headers: {
           timestamp,
           signature,
-          origin,
+          origin: this.getLocalIPAddress(),
         },
       };
 
@@ -201,5 +203,22 @@ export class N2NHandleMessagesService {
     } catch (e) {
       throw e;
     }
+  }
+
+  private getLocalIPAddress() {
+    const interfaces = networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      // @ts-expect-error
+      for (const iface of interfaces[name]) {
+        if (iface.family === "IPv4" && !iface.internal) {
+          return this.paseUrlService.createReiUrl(
+            this.nodeId,
+            iface.address,
+            6001
+          );
+        }
+      }
+    }
+    return "";
   }
 }

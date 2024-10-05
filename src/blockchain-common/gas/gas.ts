@@ -17,12 +17,11 @@ export class BlockChainGas {
 
   public calculateGasPrice(amountType: BASIC_CONVERT_VALUES): number {
     try {
-      const priceMultiplier = 1 + this.networkLoad * 2; // Можем увеличить в 2 раза при максимальной нагрузке
+      const priceMultiplier = 1 + this.networkLoad * 2;
       const calculatedGasPrice = this.basePrice * priceMultiplier;
 
-      // Ограничение минимальной и максимальной цены газа
-      const minGasPrice = GasBlockChain.MIN_GAS; // Минимальная цена газа в La
-      const maxGasPrice = GasBlockChain.MAX_GAS; // Максимальная цена газа в La
+      const minGasPrice = GasBlockChain.MIN_GAS;
+      const maxGasPrice = GasBlockChain.MAX_GAS;
 
       const value = Math.max(
         minGasPrice,
@@ -32,7 +31,7 @@ export class BlockChainGas {
       if (amountType === BASIC_CONVERT_VALUES_ENUM.LA) {
         return value;
       } else if (amountType === BASIC_CONVERT_VALUES_ENUM.REI) {
-        return +this.converterService.toRei(value.toString());
+        return +this.converterService.toArc(value.toString());
       }
 
       throw Error("Invalid convert currency type");

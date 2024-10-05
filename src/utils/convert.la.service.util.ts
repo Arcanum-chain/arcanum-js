@@ -11,7 +11,7 @@ export class ConvertToLaService {
     }
   }
 
-  public toRei(amount: string): string {
+  public toArc(amount: string): string {
     try {
       const bigNumberAmount = this.checkIsNumberAmount(amount);
 

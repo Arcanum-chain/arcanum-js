@@ -1,5 +1,5 @@
 export enum NodeFilesPaths {
-  COMMON_DIR = ".ravkchain",
+  COMMON_DIR = ".arcanum",
   KEYS_DIR = "node-keys",
   PRIVATE_KEY_FILE_NAME = "private.key",
   PUBLIC_KEY_FILE_NAME = "public.key",

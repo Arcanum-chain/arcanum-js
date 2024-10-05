@@ -1,5 +1,5 @@
 export enum DefaultDumpingPaths {
-  BLOCKCHAIN_DATA_PATH_DIR = ".ravkchain",
+  BLOCKCHAIN_DATA_PATH_DIR = ".arcanum",
   BLOCKCHAIN_DATA_PATH_FILE = "ravkchain.blockchain",
   NODE_ID_FILE = "node.id.txt",
   USERS_DATA_PATH_FILE = "ravkchain.users",

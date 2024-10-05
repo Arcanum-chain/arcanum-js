@@ -175,7 +175,7 @@ export class BlockTransaction {
       );
       const laAmount = +this.convertLaService.toLa(String(this.amount));
 
-      this.fee = +this.convertLaService.toRei(String(gas));
+      this.fee = +this.convertLaService.toArc(String(gas));
 
       if (updatedSenderBal <= laAmount) {
         throw new BlockChainError(BlockChainErrorCodes.INSUFFICIENT_FUNDS);

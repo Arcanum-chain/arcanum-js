@@ -1,6 +1,6 @@
-# RCCP Protocol - Peer-to-peer
+# ACCP Protocol - Peer-to-peer
 
-### Communication protocol for ravkchain nodes
+### Communication protocol for arcanum nodes
 
 1. **Layers:**
 

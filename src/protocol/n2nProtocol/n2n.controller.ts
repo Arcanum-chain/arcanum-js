@@ -82,19 +82,10 @@ export class N2NController {
     }
   }
 
-  private sendMessage(msg: N2NRequest, ws: WebSocket) {
-    try {
-      const serializedMessage = this.serializeService.serialize(msg);
-      ws.send(serializedMessage);
-    } catch (e) {
-      throw e;
-    }
-  }
-
   private sendResMessage(msg: N2NResponse<any>, ws: WebSocket) {
     try {
       return new Promise((resolve, reject) => {
-        ws.on("message", (msg: string) => {
+        ws.on("message", (msg: Uint8Array) => {
           const response = this.serializeService.deserialize(msg, "res");
           resolve(response as N2NResponse<any>);
         });

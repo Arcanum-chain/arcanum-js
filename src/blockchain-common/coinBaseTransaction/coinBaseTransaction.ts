@@ -53,7 +53,7 @@ export class CoinBaseTransaction {
       const chainLength = (await this.store.getChain()).length;
       const reward = this.metaStore.getBlockReward(chainLength);
 
-      const value = this.convertService.toRei(`${reward}`);
+      const value = this.convertService.toArc(`${reward}`);
 
       return value;
     } catch (e) {

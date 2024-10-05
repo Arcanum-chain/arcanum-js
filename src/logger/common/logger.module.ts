@@ -15,8 +15,11 @@ export class Logger {
     DEFAULT_DIR,
     LOGGER_FILE
   );
+  private readonly serviceName: string;
 
-  constructor() {
+  constructor(serviceName?: string) {
+    this.serviceName = serviceName ?? "APP";
+
     colors.setTheme({
       info: "green",
       warn: "yellow",
@@ -35,10 +38,11 @@ export class Logger {
         minute: "numeric",
         second: "numeric",
       });
-      const logEntry = `[LOGGER]: ${timestamp} [${level}] ${message}\n`[
-        // @ts-ignore
-        ColorsConsole[level]
-      ];
+      const logEntry =
+        `[LOGGER]: ${this.serviceName} ${timestamp} [${level}] ${message}\n`[
+          // @ts-ignore
+          ColorsConsole[level]
+        ];
 
       fs.appendFile(this.logFile, logEntry, (err) => {
         if (err) {

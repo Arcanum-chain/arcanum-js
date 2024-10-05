@@ -20,6 +20,10 @@ export function createDeferred<T>(): Deferred<T> {
 }
 
 export const bytesToHexString = (value: Uint8Array) => {
+  if (typeof value === "undefined") {
+    return "0x";
+  }
+
   return Array.from(value)
     .map((i) => i.toString(16).padStart(2, "0"))
     .join("");

@@ -27,19 +27,19 @@ export class FsSecurity {
       this.createRavkchainGroup();
 
       exec(
-        "chown root:ravkchain-group ~/.ravkchain && chmod 750 ~/.ravkchain",
+        "chown root:ravkchain-group ~/.arcanum && chmod 750 ~/.arcanum",
         (err, stdout, stderr) => {
           if (err) {
             console.log(err);
             this.logger.panicError(
-              "FS_SAFETY error in chown root mode to /.ravkchain dir"
+              "FS_SAFETY error in chown root mode to /.arcanum dir"
             );
             return;
           }
 
           if (stderr) {
             this.logger.panicError(
-              "FS_SAFETY error in chown root mode to /.ravkchain dir"
+              "FS_SAFETY error in chown root mode to /.arcanum dir"
             );
             return;
           }

@@ -26,7 +26,7 @@ export class TransactionActions {
 
       this.require(updatedSenderBal >= laAmount, "Insufficient funds");
 
-      const newSenderBalance = this.convertLaService.toRei(
+      const newSenderBalance = this.convertLaService.toArc(
         String(
           +this.convertLaService.toLa(
             (await this.store.getUserByAddress(sender.address)).balance
@@ -34,7 +34,7 @@ export class TransactionActions {
             (laAmount + +this.convertLaService.toLa(String(tx.fee)))
         )
       );
-      const newToBalance = this.convertLaService.toRei(
+      const newToBalance = this.convertLaService.toArc(
         String(
           +this.convertLaService.toLa(
             (await this.store.getUserByAddress(to.address)).balance
