@@ -15,7 +15,7 @@ exec("pm2 -v", (err, stdout, stderr) => {
     return;
   }
 
-  console.log(stdout);
+  console.log("PM2 version:", stdout);
   startNode()();
 });
 
@@ -39,7 +39,7 @@ const installPm2 = () => {
 const startNode = () => {
   return () =>
     exec(
-      `npm run build && pm2 start --name ${
+      `npm run build && pm2 start  --name ${
         name ?? "node"
       } --namespace arcanum dist/index.js`,
       (err, stdout, stderr) => {
@@ -58,16 +58,16 @@ const startNode = () => {
     );
 };
 
-exec("pm2 monit node", (err, stdout, stderr) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
+// exec("pm2 monit node", (err, stdout, stderr) => {
+//   if (err) {
+//     console.error(err);
+//     return;
+//   }
 
-  if (stderr) {
-    console.log(stderr);
-    return;
-  }
+//   if (stderr) {
+//     console.log(stderr);
+//     return;
+//   }
 
-  console.log(stdout);
-});
+//   console.log(stdout);
+// });
